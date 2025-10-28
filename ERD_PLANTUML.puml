@@ -1,0 +1,247 @@
+@startuml Rangira_Agro_Farming_ERD
+
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <i>x</i>
+
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+' ============================================
+' LOCATION HIERARCHY (Rwandan Administrative Structure)
+' ============================================
+
+table(PROVINCE) {
+  primary_key(id: BIGINT)
+  --
+  province_code: VARCHAR(10) UK
+  province_name: VARCHAR(100) UK
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(DISTRICT) {
+  primary_key(id: BIGINT)
+  --
+  district_code: VARCHAR(10) UK
+  district_name: VARCHAR(100)
+  foreign_key(province_id: BIGINT)
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(SECTOR) {
+  primary_key(id: BIGINT)
+  --
+  sector_code: VARCHAR(10) UK
+  sector_name: VARCHAR(100)
+  foreign_key(district_id: BIGINT)
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(CELL) {
+  primary_key(id: BIGINT)
+  --
+  cell_code: VARCHAR(10) UK
+  cell_name: VARCHAR(100)
+  foreign_key(sector_id: BIGINT)
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(VILLAGE) {
+  primary_key(id: BIGINT)
+  --
+  village_code: VARCHAR(10) UK
+  village_name: VARCHAR(100)
+  foreign_key(cell_id: BIGINT)
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+' ============================================
+' USER MANAGEMENT
+' ============================================
+
+table(USER) {
+  primary_key(id: BIGINT)
+  --
+  user_code: VARCHAR(20) UK
+  first_name: VARCHAR(50)
+  last_name: VARCHAR(50)
+  email: VARCHAR(100) UK
+  phone_number: VARCHAR(20) UK
+  password: VARCHAR(255)
+  user_type: ENUM
+  status: ENUM
+  foreign_key(village_id: BIGINT)
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(USER_PROFILE) {
+  primary_key(id: BIGINT)
+  --
+  foreign_key(user_id: BIGINT) UK
+  national_id: VARCHAR(16)
+  date_of_birth: DATE
+  gender: ENUM
+  profile_picture_url: VARCHAR(255)
+  bio: TEXT
+  verified: BOOLEAN
+  average_rating: DECIMAL(3,2)
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+' ============================================
+' STORAGE MANAGEMENT
+' ============================================
+
+table(STORAGE_WAREHOUSE) {
+  primary_key(id: BIGINT)
+  --
+  warehouse_code: VARCHAR(20) UK
+  warehouse_name: VARCHAR(100)
+  warehouse_type: VARCHAR(50)
+  total_capacity_kg: DECIMAL(12,2)
+  available_capacity_kg: DECIMAL(12,2)
+  foreign_key(village_id: BIGINT)
+  status: ENUM
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(WAREHOUSE_ACCESS) {
+  primary_key(id: BIGINT)
+  --
+  foreign_key(user_id: BIGINT)
+  foreign_key(warehouse_id: BIGINT)
+  access_level: ENUM
+  granted_date: DATE
+  expiry_date: DATE
+  is_active: BOOLEAN
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+' ============================================
+' CROP & INVENTORY MANAGEMENT
+' ============================================
+
+table(CROP_TYPE) {
+  primary_key(id: BIGINT)
+  --
+  crop_code: VARCHAR(20) UK
+  crop_name: VARCHAR(100)
+  category: VARCHAR(50)
+  measurement_unit: VARCHAR(20)
+  description: TEXT
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+table(INVENTORY) {
+  primary_key(id: BIGINT)
+  --
+  inventory_code: VARCHAR(20) UK
+  foreign_key(farmer_id: BIGINT)
+  foreign_key(warehouse_id: BIGINT)
+  foreign_key(crop_type_id: BIGINT)
+  foreign_key(storekeeper_id: BIGINT)
+  quantity_kg: DECIMAL(12,2)
+  remaining_quantity_kg: DECIMAL(12,2)
+  quality_grade: VARCHAR(5)
+  storage_date: DATE
+  expected_withdrawal_date: DATE
+  status: ENUM
+  notes: TEXT
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+' ============================================
+' TRANSACTION MANAGEMENT
+' ============================================
+
+table(TRANSACTION) {
+  primary_key(id: BIGINT)
+  --
+  transaction_code: VARCHAR(20) UK
+  foreign_key(inventory_id: BIGINT)
+  foreign_key(buyer_id: BIGINT)
+  foreign_key(seller_id: BIGINT)
+  quantity_kg: DECIMAL(12,2)
+  unit_price: DECIMAL(12,2)
+  total_amount: DECIMAL(12,2)
+  storage_fee: DECIMAL(12,2)
+  transaction_fee: DECIMAL(12,2)
+  net_amount: DECIMAL(12,2)
+  payment_status: ENUM
+  delivery_status: ENUM
+  transaction_date: TIMESTAMP
+  payment_date: TIMESTAMP
+  notes: TEXT
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+' ============================================
+' RATING & TRUST SYSTEM
+' ============================================
+
+table(RATING) {
+  primary_key(id: BIGINT)
+  --
+  foreign_key(rater_id: BIGINT)
+  foreign_key(rated_user_id: BIGINT)
+  foreign_key(transaction_id: BIGINT)
+  rating_score: INTEGER
+  rating_type: ENUM
+  comment: TEXT
+  created_at: TIMESTAMP
+  updated_at: TIMESTAMP
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+' Location Hierarchy (One-to-Many)
+PROVINCE "1" --o{ "many" DISTRICT
+DISTRICT "1" --o{ "many" SECTOR
+SECTOR "1" --o{ "many" CELL
+CELL "1" --o{ "many" VILLAGE
+
+' User and Location (Many-to-One)
+VILLAGE "1" --o{ "many" USER
+
+' User and UserProfile (One-to-One)
+USER "1" --|| "1" USER_PROFILE
+
+' Warehouse and Location (Many-to-One)
+VILLAGE "1" --o{ "many" STORAGE_WAREHOUSE
+
+' User and Warehouse Access (Many-to-Many)
+USER "1" --o{ "many" WAREHOUSE_ACCESS
+STORAGE_WAREHOUSE "1" --o{ "many" WAREHOUSE_ACCESS
+
+' Inventory Relationships
+USER "1" --o{ "many" INVENTORY : farmer
+USER "1" --o{ "many" INVENTORY : storekeeper
+STORAGE_WAREHOUSE "1" --o{ "many" INVENTORY
+CROP_TYPE "1" --o{ "many" INVENTORY
+
+' Transaction Relationships
+INVENTORY "1" --o{ "many" TRANSACTION
+USER "1" --o{ "many" TRANSACTION : buyer
+USER "1" --o{ "many" TRANSACTION : seller
+
+' Rating Relationships
+USER "1" --o{ "many" RATING : rater
+USER "1" --o{ "many" RATING : rated_user
+TRANSACTION "1" --o{ "many" RATING
+
+@enduml
+
