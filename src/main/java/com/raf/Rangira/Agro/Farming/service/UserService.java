@@ -142,6 +142,38 @@ public class UserService {
         return userRepository.findByLocationOrAnyParent(location);
     }
     
+    public List<User> getUsersByProvinceName(String provinceName) {
+        log.info("Getting users by province name: {}", provinceName);
+        List<Location> provinces = locationRepository.findByNameContainingIgnoreCase(provinceName);
+        
+        if (provinces.isEmpty()) {
+            throw new RuntimeException("Province not found with name: " + provinceName);
+        }
+        
+        Location province = provinces.stream()
+                .filter(loc -> loc.getLevel().name().equals("PROVINCE"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No province found with name: " + provinceName));
+        
+        return userRepository.findByLocationOrAnyParent(province);
+    }
+    
+    public Location getProvinceFromUser(Long userId) {
+        log.info("Getting province for user id: {}", userId);
+        User user = getUserById(userId);
+        Location currentLocation = user.getLocation();
+        
+        while (currentLocation != null && !currentLocation.getLevel().name().equals("PROVINCE")) {
+            currentLocation = currentLocation.getParent();
+        }
+        
+        if (currentLocation == null) {
+            throw new RuntimeException("Province not found for user");
+        }
+        
+        return currentLocation;
+    }
+    
     public Location getLocationFromUser(Long userId) {
         log.info("Getting location for user id: {}", userId);
         User user = getUserById(userId);

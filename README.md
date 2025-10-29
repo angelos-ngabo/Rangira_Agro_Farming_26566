@@ -82,7 +82,7 @@ Configure database connection in `src/main/resources/application.properties`:
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/rangira_agro_farming
 spring.datasource.username=postgres
-spring.datasource.password=yourpassword
+spring.datasource.password=""
 spring.jpa.hibernate.ddl-auto=create
 ```
 
@@ -131,12 +131,16 @@ POST   /api/locations                      - Create location
 
 ### Users
 ```
-GET    /api/users                          - List all users
-GET    /api/users/{id}                     - Get user by ID
-GET    /api/users/location/code/{code}    - Users by location
-POST   /api/users                          - Create user
-PUT    /api/users/{id}                     - Update user
-DELETE /api/users/{id}                     - Delete user
+GET    /api/users                             - List all users
+GET    /api/users/{id}                        - Get user by ID
+GET    /api/users/location/code/{code}        - Users by location code
+GET    /api/users/{id}/location               - Get location from user
+GET    /api/users/province/code/{code}        - Users by province code
+GET    /api/users/province/name/{name}        - Users by province name
+GET    /api/users/{id}/province               - Get province from user
+POST   /api/users                             - Create user
+PUT    /api/users/{id}                        - Update user
+DELETE /api/users/{id}                        - Delete user
 ```
 
 ### Warehouses
@@ -194,7 +198,7 @@ For comprehensive testing instructions including sample data and request example
 
 ### Testing Order
 
-To avoid foreign key constraint violations, follow this sequence:
+Testing Sequence:
 
 1. Locations (auto-seeded)
 2. Crop Types (auto-seeded)
@@ -204,10 +208,6 @@ To avoid foreign key constraint violations, follow this sequence:
 6. Inventories (required before transactions)
 7. Transactions (required before ratings)
 8. Ratings
-
-### Postman Collection
-
-Import `Rangira_Agro_Farming_API.postman_collection.json` for pre-configured API requests.
 
 ## JPA Features
 
@@ -247,8 +247,6 @@ List<User> findByLocationCode(@Param("locationCode") String locationCode);
 ## Configuration Notes
 
 - Database schema is recreated on each startup with `spring.jpa.hibernate.ddl-auto=create`
-- For production, change to `update` to preserve existing data
-- Passwords are stored in plain text for development purposes
 - Transaction management is handled automatically by Spring
 
 ## Project Structure
@@ -267,6 +265,6 @@ src/main/java/com/raf/Rangira/Agro/Farming/
 
 ## Author
 
-Ngabo Angelos  
+Ngabo Angelos
 Web Technology Midterm Project  
 October 2025

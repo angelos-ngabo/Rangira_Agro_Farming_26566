@@ -20,6 +20,8 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     
     boolean existsByCode(String code);
     
+    List<Location> findByNameContainingIgnoreCase(String name);
+    
     List<Location> findByLevel(LocationLevel level);
     
     List<Location> findByLevel(LocationLevel level, Sort sort);

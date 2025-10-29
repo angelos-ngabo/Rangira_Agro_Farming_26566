@@ -99,6 +99,27 @@ public class UserController {
         return ResponseEntity.ok(userService.getLocationFromUser(id));
     }
     
+    @GetMapping("/province/code/{provinceCode}")
+    @Operation(summary = "Get users by province code")
+    public ResponseEntity<List<User>> getUsersByProvinceCode(@PathVariable String provinceCode) {
+        List<User> users = userService.getUsersByLocationCode(provinceCode);
+        return ResponseEntity.ok(users);
+    }
+    
+    @GetMapping("/province/name/{provinceName}")
+    @Operation(summary = "Get users by province name")
+    public ResponseEntity<List<User>> getUsersByProvinceName(@PathVariable String provinceName) {
+        List<User> users = userService.getUsersByProvinceName(provinceName);
+        return ResponseEntity.ok(users);
+    }
+    
+    @GetMapping("/{id}/province")
+    @Operation(summary = "Get province from user (navigates up hierarchy)")
+    public ResponseEntity<Location> getProvinceFromUser(@PathVariable Long id) {
+        Location province = userService.getProvinceFromUser(id);
+        return ResponseEntity.ok(province);
+    }
+    
     @GetMapping("/{id}/location/hierarchy")
     @Operation(summary = "Get full location hierarchy from user")
     public ResponseEntity<Map<String, String>> getFullLocationHierarchy(@PathVariable Long id) {
