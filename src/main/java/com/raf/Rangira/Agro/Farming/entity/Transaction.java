@@ -37,7 +37,7 @@ public class Transaction extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_id", nullable = false)
     @NotNull(message = "Inventory is required")
-    @JsonBackReference
+    @JsonBackReference("inventory-transactions")
     @ToString.Exclude
     private Inventory inventory;
     
@@ -45,7 +45,7 @@ public class Transaction extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
     @NotNull(message = "Buyer is required")
-    @JsonBackReference
+    @JsonBackReference("buyer-transactions")
     @ToString.Exclude
     private User buyer;
     
@@ -53,7 +53,7 @@ public class Transaction extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     @NotNull(message = "Seller is required")
-    @JsonBackReference
+    @JsonBackReference("seller-transactions")
     @ToString.Exclude
     private User seller;
     
@@ -96,7 +96,7 @@ public class Transaction extends BaseEntity {
     
     // One-to-Many: Ratings for this transaction
     @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("transaction-ratings")
     @ToString.Exclude
     private List<Rating> ratings = new ArrayList<>();
 }

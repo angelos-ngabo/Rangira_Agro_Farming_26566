@@ -1,0 +1,30 @@
+package com.raf.Rangira.Agro.Farming.dto;
+
+import com.raf.Rangira.Agro.Farming.enums.RatingType;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+@Data
+public class RatingRequest {
+    @NotNull(message = "Rater ID is required")
+    private Long raterId;
+
+    @NotNull(message = "Rated user ID is required")
+    private Long ratedUserId;
+
+    @NotNull(message = "Transaction ID is required")
+    private Long transactionId;
+
+    @NotNull(message = "Rating score is required")
+    @Min(value = 1, message = "Rating must be at least 1")
+    @Max(value = 5, message = "Rating must be at most 5")
+    private Integer ratingScore;
+
+    @NotNull(message = "Rating type is required")
+    private RatingType ratingType;
+
+    private String comment;
+}
+

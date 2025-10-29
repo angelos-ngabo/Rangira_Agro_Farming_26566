@@ -1,5 +1,6 @@
 package com.raf.Rangira.Agro.Farming.controller;
 
+import com.raf.Rangira.Agro.Farming.dto.WarehouseAccessRequest;
 import com.raf.Rangira.Agro.Farming.entity.WarehouseAccess;
 import com.raf.Rangira.Agro.Farming.enums.AccessLevel;
 import com.raf.Rangira.Agro.Farming.service.WarehouseAccessService;
@@ -28,9 +29,9 @@ public class WarehouseAccessController {
     private final WarehouseAccessService warehouseAccessService;
     
     @PostMapping
-    @Operation(summary = "Create a new warehouse access")
-    public ResponseEntity<WarehouseAccess> createWarehouseAccess(@Valid @RequestBody WarehouseAccess warehouseAccess) {
-        WarehouseAccess createdWarehouseAccess = warehouseAccessService.createWarehouseAccess(warehouseAccess);
+    @Operation(summary = "Create a new warehouse access - use WarehouseAccessRequest with IDs")
+    public ResponseEntity<WarehouseAccess> createWarehouseAccess(@Valid @RequestBody WarehouseAccessRequest request) {
+        WarehouseAccess createdWarehouseAccess = warehouseAccessService.createWarehouseAccessFromRequest(request);
         return new ResponseEntity<>(createdWarehouseAccess, HttpStatus.CREATED);
     }
     

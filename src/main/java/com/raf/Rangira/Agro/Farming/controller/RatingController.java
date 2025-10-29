@@ -1,5 +1,6 @@
 package com.raf.Rangira.Agro.Farming.controller;
 
+import com.raf.Rangira.Agro.Farming.dto.RatingRequest;
 import com.raf.Rangira.Agro.Farming.entity.Rating;
 import com.raf.Rangira.Agro.Farming.enums.RatingType;
 import com.raf.Rangira.Agro.Farming.service.RatingService;
@@ -28,9 +29,9 @@ public class RatingController {
     private final RatingService ratingService;
     
     @PostMapping
-    @Operation(summary = "Create a new rating")
-    public ResponseEntity<Rating> createRating(@Valid @RequestBody Rating rating) {
-        Rating createdRating = ratingService.createRating(rating);
+    @Operation(summary = "Create a new rating - use RatingRequest with IDs")
+    public ResponseEntity<Rating> createRating(@Valid @RequestBody RatingRequest request) {
+        Rating createdRating = ratingService.createRatingFromRequest(request);
         return new ResponseEntity<>(createdRating, HttpStatus.CREATED);
     }
     

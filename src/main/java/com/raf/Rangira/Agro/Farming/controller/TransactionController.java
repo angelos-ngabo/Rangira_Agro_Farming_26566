@@ -1,5 +1,6 @@
 package com.raf.Rangira.Agro.Farming.controller;
 
+import com.raf.Rangira.Agro.Farming.dto.TransactionRequest;
 import com.raf.Rangira.Agro.Farming.entity.Transaction;
 import com.raf.Rangira.Agro.Farming.enums.DeliveryStatus;
 import com.raf.Rangira.Agro.Farming.enums.PaymentStatus;
@@ -29,9 +30,9 @@ public class TransactionController {
     private final TransactionService transactionService;
     
     @PostMapping
-    @Operation(summary = "Create a new transaction")
-    public ResponseEntity<Transaction> createTransaction(@Valid @RequestBody Transaction transaction) {
-        Transaction createdTransaction = transactionService.createTransaction(transaction);
+    @Operation(summary = "Create a new transaction - use TransactionRequest with IDs")
+    public ResponseEntity<Transaction> createTransaction(@Valid @RequestBody TransactionRequest request) {
+        Transaction createdTransaction = transactionService.createTransactionFromRequest(request);
         return new ResponseEntity<>(createdTransaction, HttpStatus.CREATED);
     }
     

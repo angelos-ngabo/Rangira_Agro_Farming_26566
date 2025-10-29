@@ -29,7 +29,7 @@ public class UserProfile extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     @NotNull(message = "User is required")
-    @JsonBackReference
+    @JsonBackReference("user-profile")
     @ToString.Exclude
     private User user;
     

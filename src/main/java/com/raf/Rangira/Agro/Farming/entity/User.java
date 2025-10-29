@@ -3,6 +3,7 @@ package com.raf.Rangira.Agro.Farming.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.raf.Rangira.Agro.Farming.enums.UserStatus;
 import com.raf.Rangira.Agro.Farming.enums.UserType;
 import jakarta.persistence.*;
@@ -14,10 +15,6 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * User Entity
- * Represents users (Farmers, Buyers, Storekeepers, Admins)
- */
 @Entity
 @Table(name = "user")
 @Data
@@ -62,59 +59,50 @@ public class User extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private UserStatus status = UserStatus.ACTIVE;
     
-    // Many-to-One relationship with Village
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "village_id", nullable = false)
-    @NotNull(message = "Village is required")
-    @JsonBackReference
+    @JoinColumn(name = "location_id", nullable = false)
+    @NotNull(message = "Location is required")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @ToString.Exclude
-    private Village village;
+    private Location location;
     
-    // One-to-One relationship with UserProfile
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference("user-profile")
     @ToString.Exclude
     private UserProfile userProfile;
     
-    // One-to-Many: User as Farmer storing crops
     @OneToMany(mappedBy = "farmer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("farmer-inventories")
     @ToString.Exclude
     private List<Inventory> inventoriesAsFarmer = new ArrayList<>();
     
-    // One-to-Many: User as Storekeeper logging inventory
     @OneToMany(mappedBy = "storekeeper", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("storekeeper-inventories")
     @ToString.Exclude
     private List<Inventory> inventoriesAsStorekeeper = new ArrayList<>();
     
-    // One-to-Many: User as Buyer
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("buyer-transactions")
     @ToString.Exclude
     private List<Transaction> transactionsAsBuyer = new ArrayList<>();
     
-    // One-to-Many: User as Seller
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("seller-transactions")
     @ToString.Exclude
     private List<Transaction> transactionsAsSeller = new ArrayList<>();
     
-    // Many-to-Many: User access to Warehouses
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("user-warehouse-accesses")
     @ToString.Exclude
     private List<WarehouseAccess> warehouseAccesses = new ArrayList<>();
     
-    // One-to-Many: Ratings given by user
     @OneToMany(mappedBy = "rater", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("rater-ratings")
     @ToString.Exclude
     private List<Rating> ratingsGiven = new ArrayList<>();
     
-    // One-to-Many: Ratings received by user
     @OneToMany(mappedBy = "ratedUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("rated-user-ratings")
     @ToString.Exclude
     private List<Rating> ratingsReceived = new ArrayList<>();
 }

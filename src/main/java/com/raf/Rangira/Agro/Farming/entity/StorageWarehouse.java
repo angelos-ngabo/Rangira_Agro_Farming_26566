@@ -3,6 +3,7 @@ package com.raf.Rangira.Agro.Farming.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.raf.Rangira.Agro.Farming.enums.WarehouseStatus;
 import com.raf.Rangira.Agro.Farming.enums.WarehouseType;
 import jakarta.persistence.*;
@@ -14,10 +15,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * StorageWarehouse Entity
- * Represents physical storage locations
- */
 @Entity
 @Table(name = "storage_warehouse")
 @Data
@@ -52,23 +49,20 @@ public class StorageWarehouse extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private WarehouseStatus status = WarehouseStatus.ACTIVE;
     
-    // Many-to-One relationship with Village
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "village_id", nullable = false)
-    @NotNull(message = "Village is required")
-    @JsonBackReference
+    @JoinColumn(name = "location_id", nullable = false)
+    @NotNull(message = "Location is required")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @ToString.Exclude
-    private Village village;
+    private Location location;
     
-    // Many-to-Many: Warehouse access
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("warehouse-accesses")
     @ToString.Exclude
     private List<WarehouseAccess> warehouseAccesses = new ArrayList<>();
     
-    // One-to-Many: Inventory in warehouse
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("warehouse-inventories")
     @ToString.Exclude
     private List<Inventory> inventories = new ArrayList<>();
 }

@@ -1,8 +1,13 @@
 package com.raf.Rangira.Agro.Farming.service;
 
+import com.raf.Rangira.Agro.Farming.dto.WarehouseAccessRequest;
+import com.raf.Rangira.Agro.Farming.entity.StorageWarehouse;
+import com.raf.Rangira.Agro.Farming.entity.User;
 import com.raf.Rangira.Agro.Farming.entity.WarehouseAccess;
 import com.raf.Rangira.Agro.Farming.enums.AccessLevel;
 import com.raf.Rangira.Agro.Farming.exception.ResourceNotFoundException;
+import com.raf.Rangira.Agro.Farming.repository.StorageWarehouseRepository;
+import com.raf.Rangira.Agro.Farming.repository.UserRepository;
 import com.raf.Rangira.Agro.Farming.repository.WarehouseAccessRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +29,32 @@ import java.util.List;
 public class WarehouseAccessService {
     
     private final WarehouseAccessRepository warehouseAccessRepository;
+    private final UserRepository userRepository;
+    private final StorageWarehouseRepository warehouseRepository;
+    
+    /**
+     * Create warehouse access from DTO request
+     */
+    public WarehouseAccess createWarehouseAccessFromRequest(WarehouseAccessRequest request) {
+        log.info("Creating warehouse access from request for user ID: {} and warehouse ID: {}", 
+            request.getUserId(), request.getWarehouseId());
+        
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + request.getUserId()));
+        
+        StorageWarehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with ID: " + request.getWarehouseId()));
+        
+        WarehouseAccess warehouseAccess = new WarehouseAccess();
+        warehouseAccess.setUser(user);
+        warehouseAccess.setWarehouse(warehouse);
+        warehouseAccess.setAccessLevel(request.getAccessLevel());
+        warehouseAccess.setGrantedDate(request.getGrantedDate());
+        warehouseAccess.setExpiryDate(request.getExpiryDate());
+        warehouseAccess.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+        
+        return warehouseAccessRepository.save(warehouseAccess);
+    }
     
     /**
      * Create a new warehouse access

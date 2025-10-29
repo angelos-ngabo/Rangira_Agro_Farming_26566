@@ -1,5 +1,6 @@
 package com.raf.Rangira.Agro.Farming.controller;
 
+import com.raf.Rangira.Agro.Farming.dto.InventoryRequest;
 import com.raf.Rangira.Agro.Farming.entity.Inventory;
 import com.raf.Rangira.Agro.Farming.enums.InventoryStatus;
 import com.raf.Rangira.Agro.Farming.service.InventoryService;
@@ -30,9 +31,9 @@ public class InventoryController {
     private final InventoryService inventoryService;
     
     @PostMapping
-    @Operation(summary = "Create new inventory (store crops)")
-    public ResponseEntity<Inventory> createInventory(@Valid @RequestBody Inventory inventory) {
-        Inventory createdInventory = inventoryService.createInventory(inventory);
+    @Operation(summary = "Create new inventory - use InventoryRequest with IDs")
+    public ResponseEntity<Inventory> createInventory(@Valid @RequestBody InventoryRequest request) {
+        Inventory createdInventory = inventoryService.createInventoryFromRequest(request);
         return new ResponseEntity<>(createdInventory, HttpStatus.CREATED);
     }
     
@@ -103,10 +104,10 @@ public class InventoryController {
         return ResponseEntity.ok(inventories);
     }
     
-    @GetMapping("/by-province/{provinceCode}")
-    @Operation(summary = "Get inventories by province code (demonstrates deep relationship)")
-    public ResponseEntity<List<Inventory>> getInventoriesByProvinceCode(@PathVariable String provinceCode) {
-        List<Inventory> inventories = inventoryService.getInventoriesByProvinceCode(provinceCode);
+    @GetMapping("/by-location/{locationCode}")
+    @Operation(summary = "Get inventories by location code")
+    public ResponseEntity<List<Inventory>> getInventoriesByLocationCode(@PathVariable String locationCode) {
+        List<Inventory> inventories = inventoryService.getInventoriesByLocationCode(locationCode);
         return ResponseEntity.ok(inventories);
     }
     

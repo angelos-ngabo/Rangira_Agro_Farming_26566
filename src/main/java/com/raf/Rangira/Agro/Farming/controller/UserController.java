@@ -1,6 +1,7 @@
 package com.raf.Rangira.Agro.Farming.controller;
 
-import com.raf.Rangira.Agro.Farming.entity.Province;
+import com.raf.Rangira.Agro.Farming.dto.UserRequest;
+import com.raf.Rangira.Agro.Farming.entity.Location;
 import com.raf.Rangira.Agro.Farming.entity.User;
 import com.raf.Rangira.Agro.Farming.enums.UserStatus;
 import com.raf.Rangira.Agro.Farming.enums.UserType;
@@ -20,10 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * User REST Controller
- * IMPORTANT: Demonstrates User-Location Relationship Endpoints
- */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -33,17 +30,16 @@ public class UserController {
     private final UserService userService;
     
     @PostMapping
-    @Operation(summary = "Create a new user")
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        User createdUser = userService.createUser(user);
+    @Operation(summary = "Create a new user - use UserRequest with locationId")
+    public ResponseEntity<User> createUser(@Valid @RequestBody UserRequest request) {
+        User createdUser = userService.createUserFromRequest(request);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
     
     @GetMapping
     @Operation(summary = "Get all users")
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getAllUsers());
     }
     
     @GetMapping("/paginated")
@@ -51,139 +47,80 @@ public class UserController {
     public ResponseEntity<Page<User>> getUsersPaginated(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("firstName"));
-        Page<User> users = userService.getUsersPaginated(pageRequest);
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getUsersPaginated(pageRequest));
     }
     
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getUserById(id));
     }
     
     @GetMapping("/email/{email}")
     @Operation(summary = "Get user by email")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        User user = userService.getUserByEmail(email);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
     
     @GetMapping("/code/{userCode}")
     @Operation(summary = "Get user by user code")
     public ResponseEntity<User> getUserByCode(@PathVariable String userCode) {
-        User user = userService.getUserByUserCode(userCode);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getUserByUserCode(userCode));
     }
     
     @GetMapping("/type/{userType}")
     @Operation(summary = "Get users by type")
     public ResponseEntity<List<User>> getUsersByType(@PathVariable UserType userType) {
-        List<User> users = userService.getUsersByType(userType);
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getUsersByType(userType));
     }
     
     @GetMapping("/status/{status}")
     @Operation(summary = "Get users by status")
     public ResponseEntity<List<User>> getUsersByStatus(@PathVariable UserStatus status) {
-        List<User> users = userService.getUsersByStatus(status);
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getUsersByStatus(status));
     }
     
-    @GetMapping("/phone/{phoneNumber}")
-    @Operation(summary = "Get user by phone number (URL-encoded)")
-    public ResponseEntity<User> getUserByPhone(@PathVariable String phoneNumber) {
-        User user = userService.getUserByPhone(phoneNumber);
-        return ResponseEntity.ok(user);
+    @GetMapping("/location/code/{locationCode}")
+    @Operation(summary = "Get users by location code")
+    public ResponseEntity<List<User>> getUsersByLocationCode(@PathVariable String locationCode) {
+        return ResponseEntity.ok(userService.getUsersByLocationCode(locationCode));
     }
     
-    @GetMapping("/search/by-phone")
-    @Operation(summary = "Get user by phone number using query parameter (easier for special characters)")
-    public ResponseEntity<User> searchUserByPhone(@RequestParam String phone) {
-        User user = userService.getUserByPhone(phone);
-        return ResponseEntity.ok(user);
-    }
-    
-    // ============================================
-    // REQUIREMENT: User-Location Relationship Endpoints
-    // ============================================
-    
-    @GetMapping("/by-province-code/{provinceCode}")
-    @Operation(summary = "Get users by province code (REQUIREMENT)")
-    public ResponseEntity<List<User>> getUsersByProvinceCode(@PathVariable String provinceCode) {
-        List<User> users = userService.getUsersByProvinceCode(provinceCode);
-        return ResponseEntity.ok(users);
-    }
-    
-    @GetMapping("/by-province-name/{provinceName}")
-    @Operation(summary = "Get users by province name (REQUIREMENT)")
-    public ResponseEntity<List<User>> getUsersByProvinceName(@PathVariable String provinceName) {
-        List<User> users = userService.getUsersByProvinceName(provinceName);
-        return ResponseEntity.ok(users);
-    }
-    
-    @GetMapping("/{id}/province")
-    @Operation(summary = "Get province from user (REQUIREMENT - reverse lookup)")
-    public ResponseEntity<Province> getProvinceFromUser(@PathVariable Long id) {
-        Province province = userService.getProvinceFromUser(id);
-        return ResponseEntity.ok(province);
-    }
-    
-    @GetMapping("/{id}/full-location")
-    @Operation(summary = "Get full location details from user")
-    public ResponseEntity<Map<String, String>> getFullLocationFromUser(@PathVariable Long id) {
-        String fullLocation = userService.getFullLocationFromUser(id);
-        Map<String, String> response = new HashMap<>();
-        response.put("userId", id.toString());
-        response.put("fullLocation", fullLocation);
-        return ResponseEntity.ok(response);
+    @GetMapping("/location/{locationId}")
+    @Operation(summary = "Get users by location (includes children)")
+    public ResponseEntity<List<User>> getUsersByLocation(@PathVariable Long locationId) {
+        return ResponseEntity.ok(userService.getUsersByLocation(locationId));
     }
     
     @GetMapping("/{id}/location")
-    @Operation(summary = "Get complete location hierarchy from user (Village → Cell → Sector → District → Province)")
-    public ResponseEntity<Map<String, Object>> getCompleteLocationFromUser(@PathVariable Long id) {
-        Map<String, Object> location = userService.getCompleteLocationFromUser(id);
-        return ResponseEntity.ok(location);
+    @Operation(summary = "Get location from user")
+    public ResponseEntity<Location> getLocationFromUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getLocationFromUser(id));
     }
     
-    @GetMapping("/by-province/{provinceCode}/type/{userType}")
-    @Operation(summary = "Get users by province code and user type")
-    public ResponseEntity<List<User>> getUsersByProvinceAndType(
-            @PathVariable String provinceCode,
-            @PathVariable UserType userType) {
-        List<User> users = userService.getUsersByProvinceCodeAndUserType(provinceCode, userType);
-        return ResponseEntity.ok(users);
+    @GetMapping("/{id}/location/hierarchy")
+    @Operation(summary = "Get full location hierarchy from user")
+    public ResponseEntity<Map<String, String>> getFullLocationHierarchy(@PathVariable Long id) {
+        String hierarchy = userService.getFullLocationHierarchy(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("userId", id.toString());
+        response.put("locationHierarchy", hierarchy);
+        return ResponseEntity.ok(response);
     }
-    
-    @GetMapping("/count/by-province/{provinceCode}")
-    @Operation(summary = "Count users by province code")
-    public ResponseEntity<Long> countUsersByProvinceCode(@PathVariable String provinceCode) {
-        long count = userService.countUsersByProvinceCode(provinceCode);
-        return ResponseEntity.ok(count);
-    }
-    
-    // ============================================
-    // Standard CRUD endpoints
-    // ============================================
     
     @PutMapping("/{id}")
     @Operation(summary = "Update user")
-    public ResponseEntity<User> updateUser(
-            @PathVariable Long id,
-            @Valid @RequestBody User user) {
-        User updatedUser = userService.updateUser(id, user);
-        return ResponseEntity.ok(updatedUser);
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+        return ResponseEntity.ok(userService.updateUser(id, user));
     }
     
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update user status")
     public ResponseEntity<User> updateUserStatus(
-            @PathVariable Long id,
+            @PathVariable Long id, 
             @RequestParam UserStatus status) {
-        User updatedUser = userService.updateUserStatus(id, status);
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(userService.updateUserStatus(id, status));
     }
     
     @DeleteMapping("/{id}")
@@ -195,16 +132,25 @@ public class UserController {
     
     @GetMapping("/exists/email/{email}")
     @Operation(summary = "Check if email exists")
-    public ResponseEntity<Boolean> emailExists(@PathVariable String email) {
-        boolean exists = userService.emailExists(email);
-        return ResponseEntity.ok(exists);
+    public ResponseEntity<Map<String, Boolean>> emailExists(@PathVariable String email) {
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", userService.emailExists(email));
+        return ResponseEntity.ok(response);
     }
     
-    @GetMapping("/count")
-    @Operation(summary = "Get total number of users")
-    public ResponseEntity<Long> getTotalUsers() {
-        long count = userService.getTotalUsers();
-        return ResponseEntity.ok(count);
+    @GetMapping("/exists/phone/{phone}")
+    @Operation(summary = "Check if phone exists")
+    public ResponseEntity<Map<String, Boolean>> phoneExists(@PathVariable String phone) {
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", userService.phoneExists(phone));
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/stats/total")
+    @Operation(summary = "Get total users count")
+    public ResponseEntity<Map<String, Long>> getTotalUsers() {
+        Map<String, Long> response = new HashMap<>();
+        response.put("totalUsers", userService.getTotalUsers());
+        return ResponseEntity.ok(response);
     }
 }
-

@@ -1,8 +1,15 @@
 package com.raf.Rangira.Agro.Farming.service;
 
+import com.raf.Rangira.Agro.Farming.dto.InventoryRequest;
+import com.raf.Rangira.Agro.Farming.entity.CropType;
 import com.raf.Rangira.Agro.Farming.entity.Inventory;
+import com.raf.Rangira.Agro.Farming.entity.StorageWarehouse;
+import com.raf.Rangira.Agro.Farming.entity.User;
 import com.raf.Rangira.Agro.Farming.enums.InventoryStatus;
+import com.raf.Rangira.Agro.Farming.repository.CropTypeRepository;
 import com.raf.Rangira.Agro.Farming.repository.InventoryRepository;
+import com.raf.Rangira.Agro.Farming.repository.StorageWarehouseRepository;
+import com.raf.Rangira.Agro.Farming.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -14,10 +21,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Inventory Service
- * Core business logic for crop storage management
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,6 +28,46 @@ import java.util.List;
 public class InventoryService {
     
     private final InventoryRepository inventoryRepository;
+    private final UserRepository userRepository;
+    private final StorageWarehouseRepository warehouseRepository;
+    private final CropTypeRepository cropTypeRepository;
+    
+    // CREATE from DTO (accepts IDs)
+    public Inventory createInventoryFromRequest(InventoryRequest request) {
+        log.info("Creating inventory from request: {}", request.getInventoryCode());
+        
+        if (inventoryRepository.existsByInventoryCode(request.getInventoryCode())) {
+            throw new RuntimeException("Inventory code already exists: " + request.getInventoryCode());
+        }
+        
+        User farmer = userRepository.findById(request.getFarmerId())
+                .orElseThrow(() -> new RuntimeException("Farmer not found with ID: " + request.getFarmerId()));
+        
+        StorageWarehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
+                .orElseThrow(() -> new RuntimeException("Warehouse not found with ID: " + request.getWarehouseId()));
+        
+        CropType cropType = cropTypeRepository.findById(request.getCropTypeId())
+                .orElseThrow(() -> new RuntimeException("Crop type not found with ID: " + request.getCropTypeId()));
+        
+        User storekeeper = userRepository.findById(request.getStorekeeperId())
+                .orElseThrow(() -> new RuntimeException("Storekeeper not found with ID: " + request.getStorekeeperId()));
+        
+        Inventory inventory = new Inventory();
+        inventory.setInventoryCode(request.getInventoryCode());
+        inventory.setFarmer(farmer);
+        inventory.setWarehouse(warehouse);
+        inventory.setCropType(cropType);
+        inventory.setStorekeeper(storekeeper);
+        inventory.setQuantityKg(request.getQuantityKg());
+        inventory.setRemainingQuantityKg(request.getQuantityKg());
+        inventory.setQualityGrade(request.getQualityGrade());
+        inventory.setStorageDate(request.getStorageDate());
+        inventory.setExpectedWithdrawalDate(request.getExpectedWithdrawalDate());
+        inventory.setStatus(InventoryStatus.STORED);
+        inventory.setNotes(request.getNotes());
+        
+        return inventoryRepository.save(inventory);
+    }
     
     // CREATE
     public Inventory createInventory(Inventory inventory) {
@@ -74,8 +117,8 @@ public class InventoryService {
         return inventoryRepository.findByStatus(status);
     }
     
-    public List<Inventory> getInventoriesByProvinceCode(String provinceCode) {
-        return inventoryRepository.findInventoriesByProvinceCode(provinceCode);
+    public List<Inventory> getInventoriesByLocationCode(String locationCode) {
+        return inventoryRepository.findInventoriesByLocationCode(locationCode);
     }
     
     public Page<Inventory> getInventoriesPaginated(Pageable pageable) {
@@ -95,9 +138,6 @@ public class InventoryService {
         return inventoryRepository.save(inventory);
     }
     
-    /**
-     * Reduce inventory quantity (when sold or withdrawn)
-     */
     public Inventory reduceInventoryQuantity(Long id, BigDecimal soldQuantity) {
         log.info("Reducing inventory {} by {} kg", id, soldQuantity);
         
@@ -121,9 +161,6 @@ public class InventoryService {
         return inventoryRepository.save(inventory);
     }
     
-    /**
-     * Mark inventory as withdrawn
-     */
     public Inventory withdrawInventory(Long id) {
         log.info("Marking inventory {} as withdrawn", id);
         

@@ -1,7 +1,7 @@
 package com.raf.Rangira.Agro.Farming.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.raf.Rangira.Agro.Farming.enums.CropCategory;
 import com.raf.Rangira.Agro.Farming.enums.MeasurementUnit;
 import jakarta.persistence.*;
@@ -12,10 +12,6 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * CropType Entity
- * Master data for different types of crops
- */
 @Entity
 @Table(name = "crop_type")
 @Data
@@ -47,9 +43,8 @@ public class CropType extends BaseEntity {
     @Column(name = "description", columnDefinition = "text")
     private String description;
     
-    // One-to-Many relationship with Inventory
     @OneToMany(mappedBy = "cropType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonIgnore
     @ToString.Exclude
     private List<Inventory> inventories = new ArrayList<>();
 }

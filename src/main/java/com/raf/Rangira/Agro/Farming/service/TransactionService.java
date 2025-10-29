@@ -1,11 +1,16 @@
 package com.raf.Rangira.Agro.Farming.service;
 
+import com.raf.Rangira.Agro.Farming.dto.TransactionRequest;
+import com.raf.Rangira.Agro.Farming.entity.Inventory;
 import com.raf.Rangira.Agro.Farming.entity.Transaction;
+import com.raf.Rangira.Agro.Farming.entity.User;
 import com.raf.Rangira.Agro.Farming.enums.DeliveryStatus;
 import com.raf.Rangira.Agro.Farming.enums.PaymentStatus;
 import com.raf.Rangira.Agro.Farming.exception.DuplicateResourceException;
 import com.raf.Rangira.Agro.Farming.exception.ResourceNotFoundException;
+import com.raf.Rangira.Agro.Farming.repository.InventoryRepository;
 import com.raf.Rangira.Agro.Farming.repository.TransactionRepository;
+import com.raf.Rangira.Agro.Farming.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +32,47 @@ import java.util.List;
 public class TransactionService {
     
     private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
+    private final InventoryRepository inventoryRepository;
+    
+    /**
+     * Create transaction from DTO request
+     */
+    public Transaction createTransactionFromRequest(TransactionRequest request) {
+        log.info("Creating transaction from request: {}", request.getTransactionCode());
+        
+        if (transactionRepository.existsByTransactionCode(request.getTransactionCode())) {
+            throw new DuplicateResourceException("Transaction with code " + request.getTransactionCode() + " already exists");
+        }
+        
+        Inventory inventory = inventoryRepository.findById(request.getInventoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + request.getInventoryId()));
+        
+        User buyer = userRepository.findById(request.getBuyerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Buyer not found with ID: " + request.getBuyerId()));
+        
+        User seller = userRepository.findById(request.getSellerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Seller not found with ID: " + request.getSellerId()));
+        
+        Transaction transaction = new Transaction();
+        transaction.setTransactionCode(request.getTransactionCode());
+        transaction.setInventory(inventory);
+        transaction.setBuyer(buyer);
+        transaction.setSeller(seller);
+        transaction.setQuantityKg(request.getQuantityKg());
+        transaction.setUnitPrice(request.getUnitPrice());
+        transaction.setTotalAmount(request.getTotalAmount());
+        transaction.setStorageFee(request.getStorageFee() != null ? request.getStorageFee() : BigDecimal.ZERO);
+        transaction.setTransactionFee(request.getTransactionFee() != null ? request.getTransactionFee() : BigDecimal.ZERO);
+        transaction.setNetAmount(request.getNetAmount());
+        transaction.setPaymentStatus(request.getPaymentStatus() != null ? request.getPaymentStatus() : PaymentStatus.PENDING);
+        transaction.setDeliveryStatus(request.getDeliveryStatus() != null ? request.getDeliveryStatus() : DeliveryStatus.PENDING);
+        transaction.setTransactionDate(request.getTransactionDate());
+        transaction.setPaymentDate(request.getPaymentDate());
+        transaction.setNotes(request.getNotes());
+        
+        return transactionRepository.save(transaction);
+    }
     
     /**
      * Create a new transaction

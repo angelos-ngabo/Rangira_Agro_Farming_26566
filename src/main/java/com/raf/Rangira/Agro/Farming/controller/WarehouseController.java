@@ -1,5 +1,6 @@
 package com.raf.Rangira.Agro.Farming.controller;
 
+import com.raf.Rangira.Agro.Farming.dto.WarehouseUpdateRequest;
 import com.raf.Rangira.Agro.Farming.entity.StorageWarehouse;
 import com.raf.Rangira.Agro.Farming.enums.WarehouseStatus;
 import com.raf.Rangira.Agro.Farming.enums.WarehouseType;
@@ -18,9 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Warehouse REST Controller
- */
 @RestController
 @RequestMapping("/api/warehouses")
 @RequiredArgsConstructor
@@ -103,19 +101,19 @@ public class WarehouseController {
         return ResponseEntity.ok(warehouses);
     }
     
-    @GetMapping("/village/{villageId}")
-    @Operation(summary = "Get warehouses by village")
-    public ResponseEntity<List<StorageWarehouse>> getWarehousesByVillage(@PathVariable Long villageId) {
-        List<StorageWarehouse> warehouses = warehouseService.getWarehousesByVillage(villageId);
+    @GetMapping("/location/{locationId}")
+    @Operation(summary = "Get warehouses by location")
+    public ResponseEntity<List<StorageWarehouse>> getWarehousesByLocation(@PathVariable Long locationId) {
+        List<StorageWarehouse> warehouses = warehouseService.getWarehousesByLocation(locationId);
         return ResponseEntity.ok(warehouses);
     }
     
     @PutMapping("/{id}")
-    @Operation(summary = "Update warehouse")
+    @Operation(summary = "Update warehouse - use WarehouseUpdateRequest with locationId")
     public ResponseEntity<StorageWarehouse> updateWarehouse(
             @PathVariable Long id,
-            @Valid @RequestBody StorageWarehouse warehouse) {
-        StorageWarehouse updatedWarehouse = warehouseService.updateWarehouse(id, warehouse);
+            @Valid @RequestBody WarehouseUpdateRequest request) {
+        StorageWarehouse updatedWarehouse = warehouseService.updateWarehouseFromRequest(id, request);
         return ResponseEntity.ok(updatedWarehouse);
     }
     

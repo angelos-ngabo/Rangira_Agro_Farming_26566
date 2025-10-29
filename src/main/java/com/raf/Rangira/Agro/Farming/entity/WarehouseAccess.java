@@ -28,7 +28,7 @@ public class WarehouseAccess extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @NotNull(message = "User is required")
-    @JsonBackReference
+    @JsonBackReference("user-warehouse-accesses")
     @ToString.Exclude
     private User user;
     
@@ -36,7 +36,7 @@ public class WarehouseAccess extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     @NotNull(message = "Warehouse is required")
-    @JsonBackReference
+    @JsonBackReference("warehouse-accesses")
     @ToString.Exclude
     private StorageWarehouse warehouse;
     

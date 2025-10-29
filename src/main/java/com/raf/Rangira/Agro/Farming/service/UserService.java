@@ -1,28 +1,23 @@
 package com.raf.Rangira.Agro.Farming.service;
 
-import com.raf.Rangira.Agro.Farming.entity.Province;
+import com.raf.Rangira.Agro.Farming.dto.UserRequest;
+import com.raf.Rangira.Agro.Farming.entity.Location;
 import com.raf.Rangira.Agro.Farming.entity.User;
 import com.raf.Rangira.Agro.Farming.entity.UserProfile;
 import com.raf.Rangira.Agro.Farming.enums.UserStatus;
 import com.raf.Rangira.Agro.Farming.enums.UserType;
+import com.raf.Rangira.Agro.Farming.repository.LocationRepository;
 import com.raf.Rangira.Agro.Farming.repository.UserProfileRepository;
 import com.raf.Rangira.Agro.Farming.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-/**
- * User Service
- * IMPORTANT: Demonstrates User-Location relationship
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,9 +26,47 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final LocationRepository locationRepository;
     
-    // CREATE
+    public User createUserFromRequest(UserRequest request) {
+        log.info("Creating user from request: {} {}", request.getFirstName(), request.getLastName());
+        
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already registered: " + request.getEmail());
+        }
+        
+        if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new RuntimeException("Phone number already registered: " + request.getPhoneNumber());
+        }
+        
+        if (userRepository.existsByUserCode(request.getUserCode())) {
+            throw new RuntimeException("User code already exists: " + request.getUserCode());
+        }
+        
+        Location location = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new RuntimeException("Location not found with ID: " + request.getLocationId()));
+        
+        User user = new User();
+        user.setUserCode(request.getUserCode());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setPassword(request.getPassword());
+        user.setUserType(request.getUserType());
+        user.setStatus(UserStatus.ACTIVE);
+        user.setLocation(location);
+        
+        User savedUser = userRepository.save(user);
+        
+        UserProfile profile = new UserProfile();
+        profile.setUser(savedUser);
+        profile.setVerified(false);
+        userProfileRepository.save(profile);
+        
+        return savedUser;
+    }
+    
     public User createUser(User user) {
         log.info("Creating user: {} {}", user.getFirstName(), user.getLastName());
         
@@ -49,13 +82,10 @@ public class UserService {
             throw new RuntimeException("User code already exists");
         }
         
-        // Hash password
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setStatus(UserStatus.ACTIVE);
         
         User savedUser = userRepository.save(user);
         
-        // Create default user profile
         UserProfile profile = new UserProfile();
         profile.setUser(savedUser);
         profile.setVerified(false);
@@ -64,7 +94,6 @@ public class UserService {
         return savedUser;
     }
     
-    // READ
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
@@ -101,119 +130,34 @@ public class UserService {
         return userRepository.findAll(pageable);
     }
     
-    // ============================================
-    // REQUIREMENT: User-Location Relationship Methods
-    // ============================================
-    
-    /**
-     * Get users by province CODE (REQUIREMENT)
-     */
-    public List<User> getUsersByProvinceCode(String provinceCode) {
-        log.info("Getting users by province code: {}", provinceCode);
-        return userRepository.findByVillageCellSectorDistrictProvinceProvinceCode(provinceCode);
+    public List<User> getUsersByLocationCode(String locationCode) {
+        log.info("Getting users by location code: {}", locationCode);
+        return userRepository.findByLocationCode(locationCode);
     }
     
-    /**
-     * Get users by province NAME (REQUIREMENT)
-     */
-    public List<User> getUsersByProvinceName(String provinceName) {
-        log.info("Getting users by province name: {}", provinceName);
-        return userRepository.findByVillageCellSectorDistrictProvinceProvinceName(provinceName);
+    public List<User> getUsersByLocation(Long locationId) {
+        log.info("Getting users by location id: {}", locationId);
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+        return userRepository.findByLocationOrAnyParent(location);
     }
     
-    /**
-     * Get users by province ID
-     */
-    public List<User> getUsersByProvinceId(Long provinceId) {
-        log.info("Getting users by province id: {}", provinceId);
-        return userRepository.findByVillageCellSectorDistrictProvinceId(provinceId);
-    }
-    
-    /**
-     * Get province from user (REQUIREMENT - reverse lookup)
-     */
-    public Province getProvinceFromUser(Long userId) {
-        log.info("Getting province for user id: {}", userId);
+    public Location getLocationFromUser(Long userId) {
+        log.info("Getting location for user id: {}", userId);
         User user = getUserById(userId);
-        return user.getVillage().getCell().getSector().getDistrict().getProvince();
+        return user.getLocation();
     }
     
-    /**
-     * Get full location details from user
-     */
-    public String getFullLocationFromUser(Long userId) {
+    public String getFullLocationHierarchy(Long userId) {
         User user = getUserById(userId);
-        Province province = user.getVillage().getCell().getSector().getDistrict().getProvince();
-        String district = user.getVillage().getCell().getSector().getDistrict().getDistrictName();
-        String sector = user.getVillage().getCell().getSector().getSectorName();
-        String cell = user.getVillage().getCell().getCellName();
-        String village = user.getVillage().getVillageName();
-        
-        return String.format("%s, %s, %s, %s, %s", 
-            village, cell, sector, district, province.getProvinceName());
+        return user.getLocation().getFullHierarchy();
     }
     
-    /**
-     * Get complete location hierarchy from user
-     */
-    public Map<String, Object> getCompleteLocationFromUser(Long userId) {
-        User user = getUserById(userId);
-        Map<String, Object> location = new HashMap<>();
-        
-        location.put("village", Map.of(
-            "id", user.getVillage().getId(),
-            "code", user.getVillage().getVillageCode(),
-            "name", user.getVillage().getVillageName()
-        ));
-        
-        location.put("cell", Map.of(
-            "id", user.getVillage().getCell().getId(),
-            "code", user.getVillage().getCell().getCellCode(),
-            "name", user.getVillage().getCell().getCellName()
-        ));
-        
-        location.put("sector", Map.of(
-            "id", user.getVillage().getCell().getSector().getId(),
-            "code", user.getVillage().getCell().getSector().getSectorCode(),
-            "name", user.getVillage().getCell().getSector().getSectorName()
-        ));
-        
-        location.put("district", Map.of(
-            "id", user.getVillage().getCell().getSector().getDistrict().getId(),
-            "code", user.getVillage().getCell().getSector().getDistrict().getDistrictCode(),
-            "name", user.getVillage().getCell().getSector().getDistrict().getDistrictName()
-        ));
-        
-        location.put("province", Map.of(
-            "id", user.getVillage().getCell().getSector().getDistrict().getProvince().getId(),
-            "code", user.getVillage().getCell().getSector().getDistrict().getProvince().getProvinceCode(),
-            "name", user.getVillage().getCell().getSector().getDistrict().getProvince().getProvinceName()
-        ));
-        
-        return location;
-    }
-    
-    /**
-     * Get users by province and user type
-     */
-    public List<User> getUsersByProvinceCodeAndUserType(String provinceCode, UserType userType) {
-        return userRepository.findUsersByProvinceCodeAndUserType(provinceCode, userType);
-    }
-    
-    /**
-     * Count users by province
-     */
-    public long countUsersByProvinceCode(String provinceCode) {
-        return userRepository.countUsersByProvinceCode(provinceCode);
-    }
-    
-    // UPDATE
     public User updateUser(Long id, User userDetails) {
         log.info("Updating user with id: {}", id);
         
         User user = getUserById(id);
         
-        // Check for unique constraints
         if (!user.getEmail().equals(userDetails.getEmail()) && 
             userRepository.existsByEmail(userDetails.getEmail())) {
             throw new RuntimeException("Email already in use");
@@ -229,7 +173,7 @@ public class UserService {
         user.setEmail(userDetails.getEmail());
         user.setPhoneNumber(userDetails.getPhoneNumber());
         user.setUserType(userDetails.getUserType());
-        user.setVillage(userDetails.getVillage());
+        user.setLocation(userDetails.getLocation());
         
         return userRepository.save(user);
     }
@@ -240,14 +184,12 @@ public class UserService {
         return userRepository.save(user);
     }
     
-    // DELETE
     public void deleteUser(Long id) {
         log.info("Deleting user with id: {}", id);
         User user = getUserById(id);
         userRepository.delete(user);
     }
     
-    // Business Logic
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
     }
@@ -261,7 +203,6 @@ public class UserService {
     }
     
     public long getTotalUsersByTypeAndStatus(UserType userType, UserStatus status) {
-        return userRepository.countByUserTypeAndStatus(userType, status);
+        return userRepository.findByUserTypeAndStatus(userType, status).size();
     }
 }
-

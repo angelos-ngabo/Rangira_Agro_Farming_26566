@@ -3,6 +3,7 @@ package com.raf.Rangira.Agro.Farming.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.raf.Rangira.Agro.Farming.enums.InventoryStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -14,10 +15,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Inventory Entity
- * Core entity tracking stored crops with verification
- */
 @Entity
 @Table(name = "inventory")
 @Data
@@ -32,19 +29,17 @@ public class Inventory extends BaseEntity {
     @Column(name = "inventory_code", unique = true, nullable = false, length = 20)
     private String inventoryCode;
     
-    // Many-to-One: Farmer who owns the crop
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farmer_id", nullable = false)
     @NotNull(message = "Farmer is required")
-    @JsonBackReference
+    @JsonBackReference("farmer-inventories")
     @ToString.Exclude
     private User farmer;
     
-    // Many-to-One: Warehouse where crop is stored
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     @NotNull(message = "Warehouse is required")
-    @JsonBackReference
+    @JsonBackReference("warehouse-inventories")
     @ToString.Exclude
     private StorageWarehouse warehouse;
     
@@ -52,7 +47,7 @@ public class Inventory extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "crop_type_id", nullable = false)
     @NotNull(message = "Crop type is required")
-    @JsonBackReference
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @ToString.Exclude
     private CropType cropType;
     
@@ -60,7 +55,7 @@ public class Inventory extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "storekeeper_id", nullable = false)
     @NotNull(message = "Storekeeper is required")
-    @JsonBackReference
+    @JsonBackReference("storekeeper-inventories")
     @ToString.Exclude
     private User storekeeper;
     
@@ -91,7 +86,7 @@ public class Inventory extends BaseEntity {
     
     // One-to-Many: Transactions for this inventory
     @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("inventory-transactions")
     @ToString.Exclude
     private List<Transaction> transactions = new ArrayList<>();
 }

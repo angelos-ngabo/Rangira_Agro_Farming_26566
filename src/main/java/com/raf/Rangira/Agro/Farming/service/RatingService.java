@@ -1,9 +1,14 @@
 package com.raf.Rangira.Agro.Farming.service;
 
+import com.raf.Rangira.Agro.Farming.dto.RatingRequest;
 import com.raf.Rangira.Agro.Farming.entity.Rating;
+import com.raf.Rangira.Agro.Farming.entity.Transaction;
+import com.raf.Rangira.Agro.Farming.entity.User;
 import com.raf.Rangira.Agro.Farming.enums.RatingType;
 import com.raf.Rangira.Agro.Farming.exception.ResourceNotFoundException;
 import com.raf.Rangira.Agro.Farming.repository.RatingRepository;
+import com.raf.Rangira.Agro.Farming.repository.TransactionRepository;
+import com.raf.Rangira.Agro.Farming.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,6 +28,34 @@ import java.util.List;
 public class RatingService {
     
     private final RatingRepository ratingRepository;
+    private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
+    
+    /**
+     * Create rating from DTO request
+     */
+    public Rating createRatingFromRequest(RatingRequest request) {
+        log.info("Creating rating from request for rated user ID: {}", request.getRatedUserId());
+        
+        User rater = userRepository.findById(request.getRaterId())
+                .orElseThrow(() -> new ResourceNotFoundException("Rater not found with ID: " + request.getRaterId()));
+        
+        User ratedUser = userRepository.findById(request.getRatedUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Rated user not found with ID: " + request.getRatedUserId()));
+        
+        Transaction transaction = transactionRepository.findById(request.getTransactionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with ID: " + request.getTransactionId()));
+        
+        Rating rating = new Rating();
+        rating.setRater(rater);
+        rating.setRatedUser(ratedUser);
+        rating.setTransaction(transaction);
+        rating.setRatingScore(request.getRatingScore());
+        rating.setRatingType(request.getRatingType());
+        rating.setComment(request.getComment());
+        
+        return ratingRepository.save(rating);
+    }
     
     /**
      * Create a new rating

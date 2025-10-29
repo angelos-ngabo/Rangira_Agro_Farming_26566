@@ -9,10 +9,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-/**
- * Rating Entity
- * Trust and rating system for users
- */
 @Entity
 @Table(name = "rating")
 @Data
@@ -23,27 +19,24 @@ import lombok.*;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Rating extends BaseEntity {
     
-    // Many-to-One: User giving the rating
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rater_id", nullable = false)
     @NotNull(message = "Rater is required")
-    @JsonBackReference
+    @JsonBackReference("rater-ratings")
     @ToString.Exclude
     private User rater;
     
-    // Many-to-One: User receiving the rating
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rated_user_id", nullable = false)
     @NotNull(message = "Rated user is required")
-    @JsonBackReference
+    @JsonBackReference("rated-user-ratings")
     @ToString.Exclude
     private User ratedUser;
     
-    // Many-to-One: Transaction context
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_id", nullable = false)
     @NotNull(message = "Transaction is required")
-    @JsonBackReference
+    @JsonBackReference("transaction-ratings")
     @ToString.Exclude
     private Transaction transaction;
     
