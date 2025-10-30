@@ -171,7 +171,11 @@ public class UserService {
             throw new RuntimeException("Province not found for user");
         }
         
-        return currentLocation;
+        // Force initialization to avoid lazy loading proxy serialization error
+        Location province = locationRepository.findById(currentLocation.getId())
+                .orElseThrow(() -> new RuntimeException("Province not found"));
+        
+        return province;
     }
     
     public Location getLocationFromUser(Long userId) {

@@ -10,7 +10,7 @@ Rangira Agro Farming is a digital farm management system designed to help farmer
 
 ![Database ERD](ERD/ERD.png)
 
-The system implements 9 core entities with proper relationships including one-to-one, one-to-many, and many-to-many associations. For detailed entity descriptions, see [TESTING_GUIDE.md](TESTING_GUIDE.md).
+The system implements 9 core entities with proper relationships including one-to-one, one-to-many, and many-to-many associations.
 
 ## Key Features
 
@@ -77,14 +77,20 @@ Kigali (Province)
 
 ### Database Configuration
 
-Configure database connection in `src/main/resources/application.properties`:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/rangira_agro_farming
-spring.datasource.username=postgres
-spring.datasource.password=""
-spring.jpa.hibernate.ddl-auto=create
+1. Copy the template configuration file:
+```bash
+cp src/main/resources/application.properties.template src/main/resources/application.properties
 ```
+
+2. Update the database password in `src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/rangira_agro_db
+spring.datasource.username=postgres
+spring.datasource.password=YOUR_PASSWORD_HERE
+spring.jpa.hibernate.ddl-auto=update
+```
+
+Note: `application.properties` is in `.gitignore` to protect credentials
 
 ### Build and Run
 
@@ -194,11 +200,7 @@ POST   /api/ratings                            - Create rating
 
 ## Testing
 
-For comprehensive testing instructions including sample data and request examples, refer to [TESTING_GUIDE.md](TESTING_GUIDE.md).
-
 ### Testing Order
-
-Testing Sequence:
 
 1. Locations (auto-seeded)
 2. Crop Types (auto-seeded)
@@ -246,7 +248,7 @@ List<User> findByLocationCode(@Param("locationCode") String locationCode);
 
 ## Configuration Notes
 
-- Database schema is recreated on each startup with `spring.jpa.hibernate.ddl-auto=create`
+- Database schema auto-updates with `spring.jpa.hibernate.ddl-auto=update`
 - Transaction management is handled automatically by Spring
 
 ## Project Structure

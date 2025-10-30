@@ -31,8 +31,14 @@ public class DataSeeder implements CommandLineRunner {
             seedSampleWarehouses();
             log.info("Data Seeding Completed!");
         } else {
-            log.info("Data already exists. Skipping seeding.");
+            log.info("Database already initialized with {} locations", locationRepository.count());
         }
+        
+        log.info("=================================================");
+        log.info("  Rangira Agro Farming Application is READY!");
+        log.info("  API Documentation: http://localhost:8080/swagger-ui.html");
+        log.info("  Server running on: http://localhost:8080");
+        log.info("=================================================");
     }
     
     private void seedLocations() {

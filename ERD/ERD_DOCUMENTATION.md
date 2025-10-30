@@ -1,25 +1,23 @@
-# 🗂️ Rangira Agro Farming - Entity Relationship Diagram
+# Rangira Agro Farming - Entity Relationship Diagram
 
----
+## Database Overview
 
-## 📊 **Database Overview**
+### Core Entities
 
-### **Core Entities:**
-1. **Location** (Hierarchical)
-2. **User**
-3. **User Profile**
-4. **Crop Type**
-5. **Storage Warehouse**
-6. **Inventory**
-7. **Transaction**
-8. **Rating**
-9. **Warehouse Access** (Junction Table)
+1. Location (Hierarchical)
+2. User
+3. User Profile
+4. Crop Type
+5. Storage Warehouse
+6. Inventory
+7. Transaction
+8. Rating
+9. Warehouse Access (Junction Table)
 
----
+## Entity Relationships
 
-## 🏗️ **Entity Relationships**
+### 1. Location (Self-Referencing Hierarchy)
 
-### **1. Location (Self-Referencing Hierarchy)**
 ```
 Province
   └── District
@@ -29,180 +27,213 @@ Province
 ```
 
 **Relationships:**
-- **Location** ← (Many) **User**
-- **Location** ← (Many) **Storage Warehouse**
-- **Location** ← (Many) **Location** (Self-referencing)
+- Location ← (Many) User
+- Location ← (Many) Storage Warehouse
+- Location ← (Many) Location (Self-referencing)
 
----
+### 2. User & User Profile
 
-### **2. User & User Profile**
 ```
 User (1) ←→ (1) User Profile
 ```
 
 **User Relationships:**
-- **User** → (1) **Location**
-- **User** ↔ (Many) **Warehouse Access** ↔ (Many) **Warehouse**
-- **User** (as Farmer) ← (Many) **Inventory**
-- **User** (as Storekeeper) ← (Many) **Inventory**
-- **User** (as Buyer) ← (Many) **Transaction**
-- **User** (as Seller) ← (Many) **Transaction**
-- **User** (as Rater) ← (Many) **Rating**
-- **User** (as Rated) ← (Many) **Rating**
+- User → (1) Location
+- User ↔ (Many) Warehouse Access ↔ (Many) Warehouse
+- User (as Farmer) ← (Many) Inventory
+- User (as Storekeeper) ← (Many) Inventory
+- User (as Buyer) ← (Many) Transaction
+- User (as Seller) ← (Many) Transaction
+- User (as Rater) ← (Many) Rating
+- User (as Rated User) ← (Many) Rating
 
----
+### 3. Storage Warehouse
 
-### **3. Inventory Flow**
-```
-Farmer (User) → Inventory ← Crop Type
-                    ↓
-              Warehouse
-                    ↓
-            Storekeeper (User)
-                    ↓
-              Transaction
-```
+**Relationships:**
+- Warehouse → (1) Location
+- Warehouse ← (Many) Inventory
+- Warehouse ↔ (Many) Warehouse Access ↔ (Many) User
 
----
+### 4. Inventory
 
-### **4. Transaction Flow**
-```
-Buyer (User) ← Transaction → Seller (User)
-                    ↓
-              Inventory
-                    ↓
-                Rating
-```
+**Relationships:**
+- Inventory → (1) Farmer (User)
+- Inventory → (1) Storekeeper (User)
+- Inventory → (1) Warehouse
+- Inventory → (1) Crop Type
+- Inventory ← (Many) Transaction
 
-## 📋 **Table Details**
-### **1. Location**
-**Purpose:** Hierarchical administrative divisions of Rwanda  
-**Levels:** Province → District → Sector → Cell → Village  
-**Key Fields:**
-- `code` - Unique location code
-- `level` - PROVINCE, DISTRICT, SECTOR, CELL, VILLAGE
-- `parent_id` - Self-referencing for hierarchy
+### 5. Transaction
 
----
+**Relationships:**
+- Transaction → (1) Inventory
+- Transaction → (1) Seller (User)
+- Transaction → (1) Buyer (User)
+- Transaction ← (Many) Rating
 
-### **2. User**
-**Purpose:** System users (farmers, buyers, storekeepers, admins)  
-**Key Fields:**
-- `user_type` - FARMER, BUYER, STOREKEEPER, ADMIN
-- `status` - ACTIVE, SUSPENDED, INACTIVE
-- `location_id` - User's location
+### 6. Rating
 
----
+**Relationships:**
+- Rating → (1) Transaction
+- Rating → (1) Rater (User)
+- Rating → (1) Rated User (User)
 
-### **3. User Profile**
-**Purpose:** Extended user information  
-**Relationship:** One-to-One with User  
-**Key Fields:**
-- `verified` - Account verification status
-- `average_rating` - Calculated from received ratings
+## Relationship Types
 
----
+### One-to-One (1:1)
+- User ← → User Profile
 
-### **4. Crop Type**
-**Purpose:** Master data for crop types  
-**Key Fields:**
-- `category` - CEREALS, LEGUMES, TUBERS, VEGETABLES, FRUITS, OTHER
-- `measurement_unit` - KG, TONS, BAGS
+### One-to-Many (1:N)
+- Location → User
+- Location → Warehouse
+- Location → Location (parent-child)
+- User (Farmer) → Inventory
+- User (Storekeeper) → Inventory
+- User (Seller) → Transaction
+- User (Buyer) → Transaction
+- User (Rater) → Rating
+- User (Rated User) → Rating
+- Warehouse → Inventory
+- Crop Type → Inventory
+- Inventory → Transaction
+- Transaction → Rating
 
----
+### Many-to-Many (M:N)
+- User ↔ Warehouse Access ↔ Warehouse
 
-### **5. Storage Warehouse**
-**Purpose:** Physical storage facilities  
-**Key Fields:**
-- `warehouse_type` - COOPERATIVE, PRIVATE, GOVERNMENT
-- `total_capacity_kg` - Maximum storage capacity
-- `available_capacity_kg` - Current available space
+## Key Attributes
 
----
+### Location
+- id (PK)
+- code (Unique)
+- name
+- level (PROVINCE, DISTRICT, SECTOR, CELL, VILLAGE)
+- parent_id (FK, Self-referencing)
 
-### **6. Warehouse Access** (Junction Table)
-**Purpose:** Many-to-Many relationship between Users and Warehouses  
-**Key Fields:**
-- `access_level` - OWNER, MANAGER, VIEWER
-- `is_active` - Access status
+### User
+- id (PK)
+- user_code (Unique)
+- email (Unique)
+- phone_number (Unique)
+- first_name
+- last_name
+- password
+- user_type (ADMIN, FARMER, BUYER, STOREKEEPER)
+- status (ACTIVE, INACTIVE, SUSPENDED)
+- location_id (FK → Location)
 
----
+### User Profile
+- id (PK)
+- user_id (FK → User, Unique)
+- bio
+- gender
+- date_of_birth
+- profile_image_url
+- national_id
+- address
 
-### **7. Inventory**
-**Purpose:** Stored crops in warehouses  
-**Key Fields:**
-- `farmer_id` - Who produced the crop
-- `storekeeper_id` - Who logged it
-- `remaining_quantity_kg` - Available for sale
-- `status` - STORED, PARTIALLY_SOLD, SOLD, WITHDRAWN
+### Storage Warehouse
+- id (PK)
+- warehouse_code (Unique)
+- warehouse_name
+- warehouse_type (PRIVATE, COOPERATIVE, GOVERNMENT)
+- location_id (FK → Location)
+- total_capacity_kg
+- available_capacity_kg
+- status (ACTIVE, INACTIVE, MAINTENANCE)
 
----
+### Crop Type
+- id (PK)
+- crop_code (Unique)
+- crop_name
+- category (CEREALS, LEGUMES, TUBERS, VEGETABLES, FRUITS, OTHER)
+- measurement_unit (TONS, BAGS, KG)
+- description
 
-### **8. Transaction**
-**Purpose:** Buy/sell transactions  
-**Key Fields:**
-- `buyer_id` - Purchasing user
-- `seller_id` - Selling user (usually farmer)
-- `payment_status` - PENDING, PAID, FAILED
-- `delivery_status` - PENDING, DELIVERED, CANCELLED
+### Inventory
+- id (PK)
+- inventory_code (Unique)
+- farmer_id (FK → User)
+- warehouse_id (FK → Storage Warehouse)
+- crop_type_id (FK → Crop Type)
+- storekeeper_id (FK → User)
+- quantity_kg
+- quality_grade
+- storage_date
+- expected_withdrawal_date
+- status (STORED, WITHDRAWN, SOLD)
 
----
+### Transaction
+- id (PK)
+- transaction_code (Unique)
+- inventory_id (FK → Inventory)
+- seller_id (FK → User)
+- buyer_id (FK → User)
+- quantity_kg
+- unit_price
+- total_amount
+- commission_amount
+- net_amount
+- transaction_date
+- payment_status (PENDING, COMPLETED, FAILED, REFUNDED)
+- delivery_status (PENDING, IN_TRANSIT, DELIVERED, CANCELLED)
 
-### **9. Rating**
-**Purpose:** Trust and quality rating system  
-**Key Fields:**
-- `rating_score` - 1 to 5
-- `rating_type` - QUALITY, RELIABILITY, PAYMENT, COMMUNICATION
+### Rating
+- id (PK)
+- transaction_id (FK → Transaction)
+- rater_id (FK → User)
+- rated_user_id (FK → User)
+- rating_type (QUALITY, RELIABILITY, COMMUNICATION, PAYMENT)
+- rating_value (1-5)
+- comment
+- rating_date
 
----
+### Warehouse Access
+- id (PK)
+- user_id (FK → User)
+- warehouse_id (FK → Storage Warehouse)
+- access_level (VIEWER, MANAGER, OWNER)
+- granted_date
+- expiry_date
+- is_active
 
-## 🔗 **Relationship Summary**
+## Database Constraints
 
-| Entity | Relationships |
-|----------|--------------|
-| **Location** | Self-referencing (parent/children), Users (1:M), Warehouses (1:M) |
-| **User** | Location (M:1), UserProfile (1:1), Warehouses (M:M via WarehouseAccess), Inventories (1:M as farmer/storekeeper), Transactions (1:M as buyer/seller), Ratings (1:M as rater/rated) |
-| **CropType** | Inventories (1:M) |
-| **StorageWarehouse** | Location (M:1), Users (M:M via WarehouseAccess), Inventories (1:M) |
-| **Inventory** | User-Farmer (M:1), User-Storekeeper (M:1), Warehouse (M:1), CropType (M:1), Transactions (1:M) |
-| **Transaction** | Inventory (M:1), User-Buyer (M:1), User-Seller (M:1), Ratings (1:M) |
-| **Rating** | User-Rater (M:1), User-Rated (M:1), Transaction (M:1) |
+### Unique Constraints
+- location.code
+- user.user_code
+- user.email
+- user.phone_number
+- user_profile.user_id
+- storage_warehouse.warehouse_code
+- crop_type.crop_code
+- inventory.inventory_code
+- transaction.transaction_code
 
----
+### Foreign Key Constraints
+- All relationships enforce referential integrity
+- Cascade operations configured for dependent entities
 
-## 🎯 **Key Features**
+### Check Constraints
+- rating_value BETWEEN 1 AND 5
+- quantity_kg > 0
+- unit_price > 0
+- available_capacity_kg <= total_capacity_kg
 
-### **1. Hierarchical Locations**
-- Self-referencing structure
-- Supports 5 levels of administrative divisions
-- Cascading relationships
+## Indexes
 
-### **2. Multi-Role Users**
-- Single user can be: Farmer, Buyer, Storekeeper, Admin
-- Different relationships based on role
-
-### **3. Flexible Warehouse Access**
-- Many-to-Many with access levels
-- Time-bound access (expiry dates)
-- Active/inactive status
-
-### **4. Complete Transaction Tracking**
-- Links buyers, sellers, and inventory
-- Tracks payments and delivery
-- Supports ratings and reviews
-
-### **5. Trust System**
-- Users rate each other after transactions
-- Multiple rating types (quality, reliability, etc.)
-- Average rating calculated in user profile
-
-
-## 📊 **Database Statistics**
-
-- **Total Tables:** 9
-- **Total Relationships:** 18
-- **Self-Referencing:** 1 (Location)
-- **One-to-One:** 1 (User ↔ UserProfile)
-- **One-to-Many:** 14
-- **Many-to-Many:** 1 (User ↔ Warehouse via WarehouseAccess)
-
+Recommended indexes for performance:
+- location.code
+- location.level
+- user.email
+- user.phone_number
+- user.user_code
+- user.user_type
+- user.location_id
+- warehouse.warehouse_code
+- warehouse.location_id
+- inventory.farmer_id
+- inventory.warehouse_id
+- transaction.seller_id
+- transaction.buyer_id
+- rating.rated_user_id

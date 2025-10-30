@@ -28,6 +28,28 @@ public class WarehouseService {
     private final StorageWarehouseRepository warehouseRepository;
     private final LocationRepository locationRepository;
     
+    public StorageWarehouse createWarehouseFromRequest(WarehouseUpdateRequest request) {
+        log.info("Creating warehouse from request: {}", request.getWarehouseName());
+
+        if (warehouseRepository.existsByWarehouseCode(request.getWarehouseCode())) {
+            throw new DuplicateResourceException("Warehouse with code " + request.getWarehouseCode() + " already exists");
+        }
+
+        Location location = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Location not found with ID: " + request.getLocationId()));
+
+        StorageWarehouse warehouse = new StorageWarehouse();
+        warehouse.setWarehouseCode(request.getWarehouseCode());
+        warehouse.setWarehouseName(request.getWarehouseName());
+        warehouse.setWarehouseType(request.getWarehouseType());
+        warehouse.setTotalCapacityKg(request.getTotalCapacityKg());
+        warehouse.setAvailableCapacityKg(request.getAvailableCapacityKg());
+        warehouse.setStatus(request.getStatus());
+        warehouse.setLocation(location);
+
+        return warehouseRepository.save(warehouse);
+    }
+
     public StorageWarehouse createWarehouse(StorageWarehouse warehouse) {
         if (warehouseRepository.existsByWarehouseCode(warehouse.getWarehouseCode())) {
             throw new DuplicateResourceException("Warehouse with code " + warehouse.getWarehouseCode() + " already exists");

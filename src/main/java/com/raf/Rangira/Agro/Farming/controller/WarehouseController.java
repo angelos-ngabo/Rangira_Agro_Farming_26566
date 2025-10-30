@@ -28,9 +28,9 @@ public class WarehouseController {
     private final WarehouseService warehouseService;
     
     @PostMapping
-    @Operation(summary = "Create a new warehouse")
-    public ResponseEntity<StorageWarehouse> createWarehouse(@Valid @RequestBody StorageWarehouse warehouse) {
-        StorageWarehouse createdWarehouse = warehouseService.createWarehouse(warehouse);
+    @Operation(summary = "Create a new warehouse - use WarehouseUpdateRequest with locationId")
+    public ResponseEntity<StorageWarehouse> createWarehouse(@Valid @RequestBody WarehouseUpdateRequest request) {
+        StorageWarehouse createdWarehouse = warehouseService.createWarehouseFromRequest(request);
         return new ResponseEntity<>(createdWarehouse, HttpStatus.CREATED);
     }
     

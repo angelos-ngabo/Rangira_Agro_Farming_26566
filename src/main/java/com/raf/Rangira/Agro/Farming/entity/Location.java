@@ -1,6 +1,7 @@
 package com.raf.Rangira.Agro.Farming.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.raf.Rangira.Agro.Farming.enums.LocationLevel;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Location extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 20)
