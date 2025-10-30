@@ -2,6 +2,7 @@ package com.raf.Rangira.Agro.Farming.service;
 
 import com.raf.Rangira.Agro.Farming.entity.Location;
 import com.raf.Rangira.Agro.Farming.enums.LocationLevel;
+import com.raf.Rangira.Agro.Farming.exception.OperationNotAllowedException;
 import com.raf.Rangira.Agro.Farming.exception.ResourceNotFoundException;
 import com.raf.Rangira.Agro.Farming.repository.LocationRepository;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +75,23 @@ public class LocationService {
     
     public void deleteLocation(Long id) {
         Location location = getLocationById(id);
+
+        int childCount = location.getChildren() == null ? 0 : location.getChildren().size();
+        int userCount = location.getUsers() == null ? 0 : location.getUsers().size();
+        int warehouseCount = location.getWarehouses() == null ? 0 : location.getWarehouses().size();
+
+        if (childCount > 0 || userCount > 0 || warehouseCount > 0) {
+            StringBuilder reason = new StringBuilder("Cannot delete location '")
+                    .append(location.getName())
+                    .append("' because it is referenced by: ");
+            boolean first = true;
+            if (childCount > 0) { reason.append(childCount).append(" child locations"); first = false; }
+            if (userCount > 0) { if (!first) reason.append(", "); reason.append(userCount).append(" users"); first = false; }
+            if (warehouseCount > 0) { if (!first) reason.append(", "); reason.append(warehouseCount).append(" warehouses"); }
+
+            throw new OperationNotAllowedException(reason.toString());
+        }
+
         locationRepository.delete(location);
         log.info("Deleted location: {}", location.getName());
     }

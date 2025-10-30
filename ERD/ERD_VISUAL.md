@@ -1,3 +1,158 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam ArrowColor #555
+skinparam ClassBorderColor #2b6cb0
+skinparam ClassFontColor #111
+skinparam shadowing false
+skinparam classBorderThickness 1
+hide methods
+hide stereotypes
+left to right direction
+
+' ===== Enums (use enum type, red background) =====
+enum enum_location_level #ffcccc {
+  code
+}
+enum enum_user_type #ffcccc {
+  code
+}
+enum enum_user_status #ffcccc {
+  code
+}
+enum enum_warehouse_type #ffcccc {
+  code
+}
+enum enum_warehouse_status #ffcccc {
+  code
+}
+enum enum_inventory_status #ffcccc {
+  code
+}
+enum enum_access_level #ffcccc {
+  code
+}
+enum enum_crop_category #ffcccc {
+  code
+}
+enum enum_payment_status #ffcccc {
+  code
+}
+enum enum_delivery_status #ffcccc {
+  code
+}
+enum enum_gender #ffcccc {
+  code
+}
+enum enum_rating_type #ffcccc {
+  code
+}
+
+' ===== Classes (green background) =====
+class Location #ccffcc {
+  id
+  code
+  name
+  level
+  parent_id
+}
+class User #ccffcc {
+  id
+  user_code
+  first_name
+  last_name
+  email
+  user_type
+  status
+  location_id
+}
+class UserProfile #ccffcc {
+  id
+  user_id
+  gender
+  verified
+}
+class StorageWarehouse #ccffcc {
+  id
+  warehouse_code
+  warehouse_name
+  warehouse_type
+  status
+  location_id
+}
+class CropType #ccffcc {
+  id
+  crop_code
+  crop_name
+  category
+}
+class Inventory #ccffcc {
+  id
+  inventory_code
+  warehouse_id
+  crop_type_id
+  farmer_id
+  storekeeper_id
+  status
+}
+class Transaction #ccffcc {
+  id
+  transaction_code
+  inventory_id
+  buyer_id
+  seller_id
+  payment_status
+  delivery_status
+}
+class Rating #ccffcc {
+  id
+  rater_id
+  rated_user_id
+  transaction_id
+  rating_score
+  rating_type
+}
+class WarehouseAccess #ccffcc {
+  id
+  warehouse_id
+  user_id
+  access_level
+  is_active
+}
+
+' ===== Relationships =====
+Location "1" -- "0..*" Location : parent
+Location "1" -- "0..*" User : located_in
+Location "1" -- "0..*" StorageWarehouse : located_in
+User "1" -- "1" UserProfile : has
+StorageWarehouse "1" -- "0..*" Inventory : stores
+CropType "1" -- "0..*" Inventory : type
+User "1" -- "0..*" Inventory : farmer
+User "1" -- "0..*" Inventory : storekeeper
+Inventory "1" -- "0..*" Transaction : transactions
+User "1" -- "0..*" Transaction : buyer
+User "1" -- "0..*" Transaction : seller
+Transaction "1" -- "0..*" Rating : ratings
+User "1" -- "0..*" Rating : rater
+User "1" -- "0..*" Rating : rated
+StorageWarehouse "1" -- "0..*" WarehouseAccess : grants
+User "1" -- "0..*" WarehouseAccess : holds
+
+' ===== Enum associations =====
+Location -- enum_location_level
+User -- enum_user_type
+User -- enum_user_status
+StorageWarehouse -- enum_warehouse_type
+StorageWarehouse -- enum_warehouse_status
+Inventory -- enum_inventory_status
+WarehouseAccess -- enum_access_level
+CropType -- enum_crop_category
+Transaction -- enum_payment_status
+Transaction -- enum_delivery_status
+UserProfile -- enum_gender
+Rating -- enum_rating_type
+
+@enduml
 # Rangira Agro Farming - ERD Visual Representation
 
 ## Database Overview

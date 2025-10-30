@@ -1,8 +1,16 @@
 package com.raf.Rangira.Agro.Farming.config;
 
-import com.raf.Rangira.Agro.Farming.entity.*;
-import com.raf.Rangira.Agro.Farming.enums.*;
-import com.raf.Rangira.Agro.Farming.repository.*;
+import com.raf.Rangira.Agro.Farming.entity.CropType;
+import com.raf.Rangira.Agro.Farming.entity.Location;
+import com.raf.Rangira.Agro.Farming.entity.StorageWarehouse;
+import com.raf.Rangira.Agro.Farming.enums.CropCategory;
+import com.raf.Rangira.Agro.Farming.enums.LocationLevel;
+import com.raf.Rangira.Agro.Farming.enums.MeasurementUnit;
+import com.raf.Rangira.Agro.Farming.enums.WarehouseStatus;
+import com.raf.Rangira.Agro.Farming.enums.WarehouseType;
+import com.raf.Rangira.Agro.Farming.repository.CropTypeRepository;
+import com.raf.Rangira.Agro.Farming.repository.LocationRepository;
+import com.raf.Rangira.Agro.Farming.repository.StorageWarehouseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -16,181 +24,104 @@ import java.math.BigDecimal;
 public class DataSeeder implements CommandLineRunner {
     
     private final LocationRepository locationRepository;
-    private final UserRepository userRepository;
-    private final UserProfileRepository userProfileRepository;
-    private final StorageWarehouseRepository warehouseRepository;
     private final CropTypeRepository cropTypeRepository;
+    private final StorageWarehouseRepository warehouseRepository;
     
     @Override
-    public void run(String... args) throws Exception {
-        if (locationRepository.count() == 0) {
-            log.info("Starting Data Seeding...");
-            seedLocations();
-            seedCropTypes();
-            seedSampleUsers();
-            seedSampleWarehouses();
-            log.info("Data Seeding Completed!");
-        } else {
-            log.info("Database already initialized with {} locations", locationRepository.count());
-        }
-        
+    public void run(String... args) {
+        seedLocationsIfEmpty();
+        seedCropTypesIfEmpty();
+        seedWarehousesIfEmpty();
+
         log.info("=================================================");
         log.info("  Rangira Agro Farming Application is READY!");
         log.info("  API Documentation: http://localhost:8080/swagger-ui.html");
         log.info("  Server running on: http://localhost:8080");
         log.info("=================================================");
     }
-    
-    private void seedLocations() {
-        log.info("Seeding Rwandan Locations...");
-        
-        Location kigali = createLocation("KIG", "Kigali City", LocationLevel.PROVINCE, null);
-        Location gasabo = createLocation("GAS", "Gasabo", LocationLevel.DISTRICT, kigali);
-        Location kimironko = createLocation("KIM", "Kimironko", LocationLevel.SECTOR, gasabo);
-        Location kibagabaga = createLocation("KIB", "Kibagabaga", LocationLevel.CELL, kimironko);
-        createLocation("KIB01", "Kibagabaga Village", LocationLevel.VILLAGE, kibagabaga);
-        
-        Location northern = createLocation("NOR", "Northern Province", LocationLevel.PROVINCE, null);
-        Location musanze = createLocation("MUS", "Musanze", LocationLevel.DISTRICT, northern);
-        Location muhoza = createLocation("MUH", "Muhoza", LocationLevel.SECTOR, musanze);
-        Location gitega = createLocation("GIT", "Gitega", LocationLevel.CELL, muhoza);
-        createLocation("GIT01", "Gitega Village", LocationLevel.VILLAGE, gitega);
-        
-        Location cyuve = createLocation("CYU", "Cyuve", LocationLevel.SECTOR, musanze);
-        Location karambi = createLocation("KAR", "Karambi", LocationLevel.CELL, cyuve);
-        createLocation("KAR01", "Karambi Village", LocationLevel.VILLAGE, karambi);
-        
-        Location southern = createLocation("SOU", "Southern Province", LocationLevel.PROVINCE, null);
-        Location huye = createLocation("HUY", "Huye", LocationLevel.DISTRICT, southern);
-        Location tumba = createLocation("TUM", "Tumba", LocationLevel.SECTOR, huye);
-        Location cyarwa = createLocation("CYA", "Cyarwa", LocationLevel.CELL, tumba);
-        createLocation("CYA01", "Cyarwa Village", LocationLevel.VILLAGE, cyarwa);
-        
-        Location eastern = createLocation("EAS", "Eastern Province", LocationLevel.PROVINCE, null);
-        Location nyagatare = createLocation("NYG", "Nyagatare", LocationLevel.DISTRICT, eastern);
-        Location matimba = createLocation("MAT", "Matimba", LocationLevel.SECTOR, nyagatare);
-        Location matimba_cell = createLocation("MATC", "Matimba Cell", LocationLevel.CELL, matimba);
-        createLocation("MATV", "Matimba Village", LocationLevel.VILLAGE, matimba_cell);
-        
-        Location western = createLocation("WES", "Western Province", LocationLevel.PROVINCE, null);
-        Location rusizi = createLocation("RUS", "Rusizi", LocationLevel.DISTRICT, western);
-        Location kamembe = createLocation("KAM", "Kamembe", LocationLevel.SECTOR, rusizi);
-        Location kamembe_cell = createLocation("KAMC", "Kamembe Cell", LocationLevel.CELL, kamembe);
-        createLocation("KAMV", "Kamembe Village", LocationLevel.VILLAGE, kamembe_cell);
-        
-        log.info("Locations seeded successfully");
+
+    private void seedLocationsIfEmpty() {
+        if (locationRepository.count() > 0) return;
+
+        Location province = Location.builder()
+                .code("PRV-KGL")
+                .name("Kigali Province")
+                .level(LocationLevel.PROVINCE)
+                .build();
+        province = locationRepository.save(province);
+
+        Location district = Location.builder()
+                .code("DST-GAS")
+                .name("Gasabo District")
+                .level(LocationLevel.DISTRICT)
+                .parent(province)
+                .build();
+        district = locationRepository.save(district);
+
+        Location sector = Location.builder()
+                .code("SCTR-KIM")
+                .name("Kimironko Sector")
+                .level(LocationLevel.SECTOR)
+                .parent(district)
+                .build();
+        sector = locationRepository.save(sector);
+
+        Location cell = Location.builder()
+                .code("CELL-BIB")
+                .name("Bibare Cell")
+                .level(LocationLevel.CELL)
+                .parent(sector)
+                .build();
+        cell = locationRepository.save(cell);
+
+        Location village = Location.builder()
+                .code("VLG-KGL001")
+                .name("Village 1")
+                .level(LocationLevel.VILLAGE)
+                .parent(cell)
+                .build();
+        locationRepository.save(village);
     }
-    
-    private Location createLocation(String code, String name, LocationLevel level, Location parent) {
-        Location location = new Location();
-        location.setCode(code);
-        location.setName(name);
-        location.setLevel(level);
-        location.setParent(parent);
-        return locationRepository.save(location);
+
+    private void seedCropTypesIfEmpty() {
+        if (cropTypeRepository.count() > 0) return;
+
+        cropTypeRepository.save(newCrop("CRP-MAI", "Maize", CropCategory.CEREALS));
+        cropTypeRepository.save(newCrop("CRP-BEA", "Beans", CropCategory.LEGUMES));
+        cropTypeRepository.save(newCrop("CRP-RIC", "Rice", CropCategory.CEREALS));
+        cropTypeRepository.save(newCrop("CRP-POT", "Potatoes", CropCategory.TUBERS));
     }
-    
-    private void seedCropTypes() {
-        log.info("Seeding Crop Types...");
-        
-        createCropType("CRP-MAI", "Maize", CropCategory.CEREALS, MeasurementUnit.KG);
-        createCropType("CRP-BEA", "Beans", CropCategory.LEGUMES, MeasurementUnit.KG);
-        createCropType("CRP-RIC", "Rice", CropCategory.CEREALS, MeasurementUnit.KG);
-        createCropType("CRP-WHE", "Wheat", CropCategory.CEREALS, MeasurementUnit.KG);
-        createCropType("CRP-POT", "Irish Potatoes", CropCategory.TUBERS, MeasurementUnit.KG);
-        createCropType("CRP-CAS", "Cassava", CropCategory.TUBERS, MeasurementUnit.KG);
-        createCropType("CRP-TOM", "Tomatoes", CropCategory.VEGETABLES, MeasurementUnit.KG);
-        createCropType("CRP-CAB", "Cabbage", CropCategory.VEGETABLES, MeasurementUnit.KG);
-        
-        log.info("Crop Types seeded");
+
+    private CropType newCrop(String code, String name, CropCategory category) {
+        CropType ct = new CropType();
+        ct.setCropCode(code);
+        ct.setCropName(name);
+        ct.setCategory(category);
+        ct.setMeasurementUnit(MeasurementUnit.KG);
+        ct.setDescription(null);
+        return ct;
     }
-    
-    private void createCropType(String code, String name, CropCategory category, MeasurementUnit unit) {
-        CropType cropType = new CropType();
-        cropType.setCropCode(code);
-        cropType.setCropName(name);
-        cropType.setCategory(category);
-        cropType.setMeasurementUnit(unit);
-        cropTypeRepository.save(cropType);
-    }
-    
-    private void seedSampleUsers() {
-        log.info("Seeding Sample Users...");
-        
-        Location gitejaVillage = locationRepository.findByCode("GIT01")
-                .orElseThrow(() -> new RuntimeException("Village not found"));
-        Location karambiVillage = locationRepository.findByCode("KAR01")
-                .orElseThrow(() -> new RuntimeException("Village not found"));
-        
-        createUser("USR-ADM-001", "Admin", "User", "admin@rangira.rw", 
-                   "+250788000001", "admin123", UserType.ADMIN, gitejaVillage);
-        
-        createUser("USR-FAR-001", "Jean", "Uwimana", "jean.uwimana@farmer.rw",
-                   "+250788000002", "farmer123", UserType.FARMER, gitejaVillage);
-        
-        createUser("USR-FAR-002", "Marie", "Mukamana", "marie.mukamana@farmer.rw",
-                   "+250788000003", "farmer123", UserType.FARMER, karambiVillage);
-        
-        createUser("USR-BUY-001", "Emmanuel", "Kagame", "emmanuel.kagame@buyer.rw",
-                   "+250788000004", "buyer123", UserType.BUYER, gitejaVillage);
-        
-        createUser("USR-STK-001", "Joseph", "Habimana", "joseph.habimana@storekeeper.rw",
-                   "+250788000005", "storekeeper123", UserType.STOREKEEPER, gitejaVillage);
-        
-        log.info("Sample Users seeded");
-    }
-    
-    private void createUser(String userCode, String firstName, String lastName, 
-                          String email, String phone, String password, 
-                          UserType userType, Location location) {
-        User user = new User();
-        user.setUserCode(userCode);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setEmail(email);
-        user.setPhoneNumber(phone);
-        user.setPassword(password);
-        user.setUserType(userType);
-        user.setStatus(UserStatus.ACTIVE);
-        user.setLocation(location);
-        User savedUser = userRepository.save(user);
-        
-        UserProfile profile = new UserProfile();
-        profile.setUser(savedUser);
-        profile.setVerified(false);
-        userProfileRepository.save(profile);
-    }
-    
-    private void seedSampleWarehouses() {
-        log.info("Seeding Sample Warehouses...");
-        
-        Location gitejaVillage = locationRepository.findByCode("GIT01")
-                .orElseThrow(() -> new RuntimeException("Village not found"));
-        Location karambiVillage = locationRepository.findByCode("KAR01")
-                .orElseThrow(() -> new RuntimeException("Village not found"));
-        
-        createWarehouse("WH-MUS-001", "Musanze Cooperative Store", 
-                       WarehouseType.COOPERATIVE, new BigDecimal("50000"), gitejaVillage);
-        
-        createWarehouse("WH-MUS-002", "Musanze Government Storage",
-                       WarehouseType.GOVERNMENT, new BigDecimal("100000"), gitejaVillage);
-        
-        createWarehouse("WH-KAR-001", "Karambi Private Warehouse",
-                       WarehouseType.PRIVATE, new BigDecimal("30000"), karambiVillage);
-        
-        log.info("Sample Warehouses seeded");
-    }
-    
-    private void createWarehouse(String code, String name, WarehouseType type,
-                                BigDecimal capacity, Location location) {
-        StorageWarehouse warehouse = new StorageWarehouse();
-        warehouse.setWarehouseCode(code);
-        warehouse.setWarehouseName(name);
-        warehouse.setWarehouseType(type);
-        warehouse.setTotalCapacityKg(capacity);
-        warehouse.setAvailableCapacityKg(capacity);
-        warehouse.setStatus(WarehouseStatus.ACTIVE);
-        warehouse.setLocation(location);
-        warehouseRepository.save(warehouse);
+
+    private void seedWarehousesIfEmpty() {
+        if (warehouseRepository.count() > 0) return;
+
+        Location anySector = locationRepository.findByCode("SCTR-KIM")
+                .orElseGet(() -> locationRepository.findAll().stream()
+                        .filter(l -> l.getLevel() == LocationLevel.SECTOR)
+                        .findFirst()
+                        .orElse(null));
+        if (anySector == null) return;
+
+        StorageWarehouse w = new StorageWarehouse();
+        w.setWarehouseCode("WH-KIM-001");
+        w.setWarehouseName("Kimironko Central Warehouse");
+        w.setWarehouseType(WarehouseType.COOPERATIVE);
+        w.setTotalCapacityKg(new BigDecimal("50000"));
+        w.setAvailableCapacityKg(new BigDecimal("50000"));
+        w.setStatus(WarehouseStatus.ACTIVE);
+        w.setLocation(anySector);
+        warehouseRepository.save(w);
     }
 }
+
+
