@@ -4,13 +4,13 @@ A Spring Boot application for agricultural storage and trading management in Rwa
 
 ## Description
 
-Rangira Agro Farming is a digital farm management system designed to help farmers efficiently manage agricultural activities. The system provides centralized crop production tracking, warehouse management, sales recording, and user rating functionality. It implements Rwanda's five-level administrative hierarchy (Province, District, Sector, Cell, Village) using a self-referential location structure.
+Rangira Agro Farming manages agricultural storage and trading in Rwanda. The system tracks crop inventory, warehouse capacity, transactions, and user ratings. It uses Rwanda's administrative hierarchy (Province, District, Sector, Cell, Village) with a self-referential location structure.
 
 ## Entity Relationship Diagram
 
 ![Database ERD](ERD/ERD.png)
 
-The system implements 9 core entities with proper relationships including one-to-one, one-to-many, and many-to-many associations.
+The system has 9 entities with one-to-one, one-to-many, and many-to-many relationships.
 
 ## Key Features
 
@@ -19,12 +19,12 @@ The system implements 9 core entities with proper relationships including one-to
 - Warehouse management with capacity tracking
 - Crop inventory tracking with quality grading
 - Transaction processing with payment and delivery status
-- User rating system for quality assurance
+- User rating system
 - RESTful API with Swagger documentation
 
 ## Technology Stack
 
-- Java 17
+- Java 21
 - Spring Boot 3.5.7
 - Spring Data JPA with Hibernate
 - PostgreSQL database
@@ -47,7 +47,7 @@ The system implements 9 core entities with proper relationships including one-to
 
 ### Location Hierarchy
 
-The Location entity implements a self-referential design supporting five levels:
+Location entity uses self-referential structure with five levels:
 
 ```
 Province (parent_id = NULL)
@@ -70,27 +70,10 @@ Kigali (Province)
 
 ### Prerequisites
 
-- Java Development Kit (JDK) 17 or higher
+- Java Development Kit (JDK) 21 or higher
 - Apache Maven 3.6+
 - PostgreSQL 12+ (or MySQL/H2)
 - Git
-
-### Database Configuration
-
-1. Copy the template configuration file:
-```bash
-cp src/main/resources/application.properties.template src/main/resources/application.properties
-```
-
-2. Update the database password in `src/main/resources/application.properties`:
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/rangira_agro_db
-spring.datasource.username=postgres
-spring.datasource.password=YOUR_PASSWORD_HERE
-spring.jpa.hibernate.ddl-auto=update
-```
-
-Note: `application.properties` is in `.gitignore` to protect credentials
 
 ### Build and Run
 
@@ -107,7 +90,7 @@ Access Swagger UI at: http://localhost:8080/swagger-ui.html
 
 ## Initial Data
 
-The application automatically seeds the following data on startup:
+Data seeded on startup:
 
 **Locations:**
 - 5 Provinces: Kigali, Northern, Southern, Eastern, Western
@@ -213,7 +196,7 @@ POST   /api/ratings                            - Create rating
 
 ## JPA Features
 
-The project demonstrates various Spring Data JPA capabilities:
+Spring Data JPA methods used:
 
 **Dynamic Queries:**
 ```java
@@ -246,10 +229,9 @@ Page<User> users = userRepository.findAll(pageRequest);
 List<User> findByLocationCode(@Param("locationCode") String locationCode);
 ```
 
-## Configuration Notes
+## Configuration
 
-- Database schema auto-updates with `spring.jpa.hibernate.ddl-auto=update`
-- Transaction management is handled automatically by Spring
+- Database schema updates with `spring.jpa.hibernate.ddl-auto=update`
 
 ## Project Structure
 
@@ -268,5 +250,6 @@ src/main/java/com/raf/Rangira/Agro/Farming/
 ## Author
 
 Ngabo Angelos
+
 Web Technology Midterm Project  
 October 2025

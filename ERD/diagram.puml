@@ -1,0 +1,282 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam ArrowColor #555
+skinparam ClassBorderColor #2b6cb0
+skinparam ClassFontColor #111
+skinparam shadowing false
+skinparam classBorderThickness 1
+hide methods
+hide stereotypes
+left to right direction
+
+' ===== Enums (red background) =====
+enum enum_location_level #ffcccc {
+  code : varchar(20)
+  --
+  PROVINCE
+  DISTRICT
+  SECTOR
+  CELL
+  VILLAGE
+}
+
+enum enum_user_type #ffcccc {
+  code : varchar(20)
+  --
+  FARMER
+  BUYER
+  STOREKEEPER
+  ADMIN
+}
+
+enum enum_user_status #ffcccc {
+  code : varchar(20)
+  --
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum enum_warehouse_type #ffcccc {
+  code : varchar(50)
+  --
+  COOPERATIVE
+  PRIVATE
+  GOVERNMENT
+}
+
+enum enum_warehouse_status #ffcccc {
+  code : varchar(20)
+  --
+  ACTIVE
+  MAINTENANCE
+  CLOSED
+}
+
+enum enum_inventory_status #ffcccc {
+  code : varchar(20)
+  --
+  STORED
+  PARTIALLY_SOLD
+  SOLD
+  WITHDRAWN
+}
+
+enum enum_access_level #ffcccc {
+  code : varchar(20)
+  --
+  OWNER
+  MANAGER
+  VIEWER
+}
+
+enum enum_crop_category #ffcccc {
+  code : varchar(50)
+  --
+  CEREALS
+  LEGUMES
+  TUBERS
+  VEGETABLES
+  FRUITS
+  OTHER
+}
+
+enum enum_payment_status #ffcccc {
+  code : varchar(20)
+  --
+  PENDING
+  PAID
+  FAILED
+}
+
+enum enum_delivery_status #ffcccc {
+  code : varchar(20)
+  --
+  PENDING
+  DELIVERED
+  CANCELLED
+}
+
+enum enum_gender #ffcccc {
+  code : varchar(10)
+  --
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum enum_rating_type #ffcccc {
+  code : varchar(30)
+  --
+  QUALITY
+  RELIABILITY
+  PAYMENT
+  COMMUNICATION
+}
+
+' ===== Classes (green background) =====
+class Location #ccffcc {
+  id : int
+  code : varchar(20)
+  name : varchar(100)
+  level : varchar(20)
+  parent_id : int
+  created_at : date
+  updated_at : date
+}
+
+class User #ccffcc {
+  id : int
+  user_code : varchar(20)
+  first_name : varchar(50)
+  last_name : varchar(50)
+  email : varchar(100)
+  phone_number : varchar(20)
+  password : varchar
+  user_type : varchar(20)
+  status : varchar(20)
+  location_id : int
+  created_at : date
+  updated_at : date
+}
+
+class UserProfile #ccffcc {
+  id : int
+  user_id : int
+  national_id : varchar(16)
+  date_of_birth : date
+  gender : varchar(10)
+  profile_picture_url : varchar
+  bio : text
+  verified : boolean
+  average_rating : varchar
+  created_at : date
+  updated_at : date
+}
+
+class StorageWarehouse #ccffcc {
+  id : int
+  warehouse_code : varchar(20)
+  warehouse_name : varchar(100)
+  warehouse_type : varchar(50)
+  total_capacity_kg : varchar
+  available_capacity_kg : varchar
+  status : varchar(20)
+  location_id : int
+  created_at : date
+  updated_at : date
+}
+
+class CropType #ccffcc {
+  id : int
+  crop_code : varchar(20)
+  crop_name : varchar(100)
+  category : varchar(50)
+  measurement_unit : varchar(20)
+  description : text
+  created_at : date
+  updated_at : date
+}
+
+class Inventory #ccffcc {
+  id : int
+  inventory_code : varchar(20)
+  warehouse_id : int
+  crop_type_id : int
+  farmer_id : int
+  storekeeper_id : int
+  quantity_kg : varchar
+  remaining_quantity_kg : varchar
+  quality_grade : varchar(5)
+  storage_date : date
+  expected_withdrawal_date : date
+  status : varchar(20)
+  notes : text
+  created_at : date
+  updated_at : date
+}
+
+class Transaction #ccffcc {
+  id : int
+  transaction_code : varchar(20)
+  inventory_id : int
+  buyer_id : int
+  seller_id : int
+  quantity_kg : varchar
+  unit_price : varchar
+  total_amount : varchar
+  storage_fee : varchar
+  transaction_fee : varchar
+  net_amount : varchar
+  payment_status : varchar(20)
+  delivery_status : varchar(20)
+  transaction_date : date
+  payment_date : date
+  notes : text
+  created_at : date
+  updated_at : date
+}
+
+class Rating #ccffcc {
+  id : int
+  rater_id : int
+  rated_user_id : int
+  transaction_id : int
+  rating_score : int
+  rating_type : varchar(30)
+  comment : text
+  created_at : date
+  updated_at : date
+}
+
+class WarehouseAccess #ccffcc {
+  id : int
+  warehouse_id : int
+  user_id : int
+  access_level : varchar(20)
+  granted_date : date
+  expiry_date : date
+  is_active : boolean
+  created_at : date
+  updated_at : date
+}
+
+' ===== Relationships =====
+Location "1" -- "0..*" Location : parent
+Location "1" -- "0..*" User : located_in
+Location "1" -- "0..*" StorageWarehouse : located_in
+
+User "1" -- "1" UserProfile : has
+
+StorageWarehouse "1" -- "0..*" Inventory : stores
+CropType "1" -- "0..*" Inventory : type
+User "1" -- "0..*" Inventory : farmer
+User "1" -- "0..*" Inventory : storekeeper
+
+Inventory "1" -- "0..*" Transaction : transactions
+User "1" -- "0..*" Transaction : buyer
+User "1" -- "0..*" Transaction : seller
+
+Transaction "1" -- "0..*" Rating : ratings
+User "1" -- "0..*" Rating : rater
+User "1" -- "0..*" Rating : rated
+
+StorageWarehouse "1" -- "0..*" WarehouseAccess : grants
+User "1" -- "0..*" WarehouseAccess : holds
+
+' ===== Enum associations =====
+Location -- enum_location_level
+User -- enum_user_type
+User -- enum_user_status
+StorageWarehouse -- enum_warehouse_type
+StorageWarehouse -- enum_warehouse_status
+Inventory -- enum_inventory_status
+WarehouseAccess -- enum_access_level
+CropType -- enum_crop_category
+Transaction -- enum_payment_status
+Transaction -- enum_delivery_status
+UserProfile -- enum_gender
+Rating -- enum_rating_type
+
+@enduml
