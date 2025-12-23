@@ -15,20 +15,20 @@ import java.util.Optional;
 
 @Repository
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
-    
-    Optional<UserProfile> findByUserId(Long userId);
-    Optional<UserProfile> findByNationalId(String nationalId);
-    List<UserProfile> findByGender(Gender gender);
-    List<UserProfile> findByVerified(Boolean verified);
-    List<UserProfile> findByAverageRatingGreaterThanEqual(BigDecimal rating);
-    
-    boolean existsByUserId(Long userId);
-    boolean existsByNationalId(String nationalId);
-    boolean existsByVerified(Boolean verified);
-    
-    @Query("SELECT up FROM UserProfile up WHERE up.averageRating >= :minRating AND up.verified = true")
-    List<UserProfile> findVerifiedProfilesWithMinRating(@Param("minRating") BigDecimal minRating);
-    
-    Page<UserProfile> findByVerified(Boolean verified, Pageable pageable);
+
+Optional<UserProfile> findByUserId(Long userId);
+Optional<UserProfile> findByNationalId(String nationalId);
+List<UserProfile> findByGender(Gender gender);
+List<UserProfile> findByVerified(Boolean verified);
+List<UserProfile> findByAverageRatingGreaterThanEqual(BigDecimal rating);
+
+boolean existsByUserId(Long userId);
+boolean existsByNationalId(String nationalId);
+boolean existsByVerified(Boolean verified);
+
+@Query("SELECT up FROM UserProfile up WHERE up.averageRating >= :minRating AND up.verified = true")
+List<UserProfile> findVerifiedProfilesWithMinRating(@Param("minRating") BigDecimal minRating);
+
+Page<UserProfile> findByVerified(Boolean verified, Pageable pageable);
 }
 

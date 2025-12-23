@@ -8,23 +8,24 @@ import lombok.Data;
 
 @Data
 public class RatingRequest {
-    @NotNull(message = "Rater ID is required")
-    private Long raterId;
+@NotNull(message = "Rater ID is required")
+private Long raterId;
 
-    @NotNull(message = "Rated user ID is required")
-    private Long ratedUserId;
+@NotNull(message = "Rated user ID is required")
+private Long ratedUserId;
 
-    @NotNull(message = "Transaction ID is required")
-    private Long transactionId;
+private Long transactionId;
 
-    @NotNull(message = "Rating score is required")
-    @Min(value = 1, message = "Rating must be at least 1")
-    @Max(value = 5, message = "Rating must be at most 5")
-    private Integer ratingScore;
+private Long inventoryId;
 
-    @NotNull(message = "Rating type is required")
-    private RatingType ratingType;
+@NotNull(message = "Rating score is required")
+@Min(value = 1, message = "Rating must be at least 1")
+@Max(value = 5, message = "Rating must be at most 5")
+private Integer ratingScore;
 
-    private String comment;
+@NotNull(message = "Rating type is required")
+private RatingType ratingType;
+
+private String comment;
 }
 

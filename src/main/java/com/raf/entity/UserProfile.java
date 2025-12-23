@@ -19,34 +19,34 @@ import java.time.LocalDate;
 @ToString(callSuper = true)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class UserProfile extends BaseEntity {
-    
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", unique = true, nullable = false)
-    @NotNull(message = "User is required")
-    @JsonBackReference("user-profile")
-    @ToString.Exclude
-    private User user;
-    
-    @Column(name = "national_id", unique = true, length = 16)
-    private String nationalId;
-    
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "gender", length = 10)
-    private Gender gender;
-    
-    @Column(name = "profile_picture_url")
-    private String profilePictureUrl;
-    
-    @Column(name = "bio", columnDefinition = "text")
-    private String bio;
-    
-    @Column(name = "verified")
-    private Boolean verified = false;
-    
-    @Column(name = "average_rating", precision = 3, scale = 2)
-    private BigDecimal averageRating = BigDecimal.ZERO;
+
+@OneToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "user_id", unique = true, nullable = false)
+@NotNull(message = "User is required")
+@JsonBackReference("user-profile")
+@ToString.Exclude
+private User user;
+
+@Column(name = "national_id", unique = true, length = 16)
+private String nationalId;
+
+@Column(name = "date_of_birth")
+private LocalDate dateOfBirth;
+
+@Enumerated(EnumType.STRING)
+@Column(name = "gender", length = 10)
+private Gender gender;
+
+@Column(name = "profile_picture_url")
+private String profilePictureUrl;
+
+@Column(name = "bio", columnDefinition = "text")
+private String bio;
+
+@Column(name = "verified")
+private Boolean verified = false;
+
+@Column(name = "average_rating", precision = 3, scale = 2)
+private BigDecimal averageRating = BigDecimal.ZERO;
 }
 

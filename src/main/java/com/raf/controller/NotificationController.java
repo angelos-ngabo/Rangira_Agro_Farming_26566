@@ -1,0 +1,111 @@
+package com.raf.controller;
+
+import com.raf.entity.Notification;
+import com.raf.entity.User;
+import com.raf.service.NotificationService;
+import com.raf.service.UserService;
+import com.raf.util.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/notifications")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Notification", description = "Notification management APIs")
+public class NotificationController {
+
+private final NotificationService notificationService;
+private final UserService userService;
+private final JwtUtil jwtUtil;
+
+@GetMapping
+@Operation(summary = "Get user notifications")
+public ResponseEntity<List<Notification>> getNotifications(HttpServletRequest request) {
+Long userId = getCurrentUserId(request);
+return ResponseEntity.ok(notificationService.getUserNotifications(userId));
+}
+
+@GetMapping("/unread")
+@Operation(summary = "Get unread notifications")
+public ResponseEntity<List<Notification>> getUnreadNotifications(HttpServletRequest request) {
+Long userId = getCurrentUserId(request);
+return ResponseEntity.ok(notificationService.getUnreadNotifications(userId));
+}
+
+@GetMapping("/unread/count")
+@Operation(summary = "Get unread notification count")
+public ResponseEntity<Long> getUnreadCount(HttpServletRequest request) {
+Long userId = getCurrentUserId(request);
+return ResponseEntity.ok(notificationService.getUnreadCount(userId));
+}
+
+@PatchMapping("/{id}/read")
+@Operation(summary = "Mark notification as read")
+public ResponseEntity<Void> markAsRead(@PathVariable Long id, HttpServletRequest request) {
+Long userId = getCurrentUserId(request);
+notificationService.markAsRead(id, userId);
+return ResponseEntity.noContent().build();
+}
+
+@PatchMapping("/read-all")
+@Operation(summary = "Mark all notifications as read")
+public ResponseEntity<Void> markAllAsRead(HttpServletRequest request) {
+Long userId = getCurrentUserId(request);
+notificationService.markAllAsRead(userId);
+return ResponseEntity.noContent().build();
+}
+
+private Long getCurrentUserId(HttpServletRequest request) {
+try {
+String authHeader = request.getHeader("Authorization");
+if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+log.error("Authorization header missing or invalid");
+throw new RuntimeException("Authorization header missing or invalid");
+}
+
+String jwt = authHeader.substring(7);
+
+try {
+Long userId = jwtUtil.getUserIdFromToken(jwt);
+if (userId != null) {
+log.debug("Extracted userId from token: {}", userId);
+return userId;
+}
+} catch (Exception e) {
+log.warn("Failed to extract userId from token, will try email fallback: {}", e.getMessage());
+}
+
+
+String email = jwtUtil.extractUsername(jwt);
+if (email == null || email.isEmpty()) {
+log.error("Unable to extract username from token");
+throw new RuntimeException("Unable to extract username from token");
+}
+
+log.debug("Extracting userId from email: {}", email);
+User user = userService.getUserByEmail(email);
+if (user == null || user.getId() == null) {
+log.error("User not found or has no ID for email: {}", email);
+throw new RuntimeException("User not found with email: " + email);
+}
+
+log.debug("Successfully got userId: {} for email: {}", user.getId(), email);
+return user.getId();
+} catch (NumberFormatException e) {
+log.error("NumberFormatException while getting userId: {}", e.getMessage());
+throw new RuntimeException("Invalid user ID format: " + e.getMessage(), e);
+} catch (Exception e) {
+log.error("Failed to get user ID from request: {}", e.getMessage(), e);
+throw new RuntimeException("Failed to get user ID from request: " + e.getMessage(), e);
+}
+}
+}
+

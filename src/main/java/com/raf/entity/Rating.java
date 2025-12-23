@@ -18,40 +18,45 @@ import lombok.*;
 @ToString(callSuper = true)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Rating extends BaseEntity {
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rater_id", nullable = false)
-    @NotNull(message = "Rater is required")
-    @JsonBackReference("rater-ratings")
-    @ToString.Exclude
-    private User rater;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rated_user_id", nullable = false)
-    @NotNull(message = "Rated user is required")
-    @JsonBackReference("rated-user-ratings")
-    @ToString.Exclude
-    private User ratedUser;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transaction_id", nullable = false)
-    @NotNull(message = "Transaction is required")
-    @JsonBackReference("transaction-ratings")
-    @ToString.Exclude
-    private Transaction transaction;
-    
-    @Column(name = "rating_score", nullable = false)
-    @NotNull(message = "Rating score is required")
-    @Min(value = 1, message = "Rating must be at least 1")
-    @Max(value = 5, message = "Rating must be at most 5")
-    private Integer ratingScore;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "rating_type", nullable = false, length = 30)
-    @NotNull(message = "Rating type is required")
-    private RatingType ratingType;
-    
-    @Column(name = "comment", columnDefinition = "text")
-    private String comment;
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "rater_id", nullable = false)
+@NotNull(message = "Rater is required")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "notifications", "warehouseAccesses", "inventoriesAsFarmer", "inventoriesAsStorekeeper", "transactionsAsBuyer", "transactionsAsSeller", "enquiriesAsBuyer", "enquiriesAsFarmer", "wallet", "supportedCropTypes", "ratingsGiven", "ratingsReceived", "payments", "interestedCropTypes"})
+@ToString.Exclude
+private User rater;
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "rated_user_id", nullable = false)
+@NotNull(message = "Rated user is required")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "notifications", "warehouseAccesses", "inventoriesAsFarmer", "inventoriesAsStorekeeper", "transactionsAsBuyer", "transactionsAsSeller", "enquiriesAsBuyer", "enquiriesAsFarmer", "wallet", "supportedCropTypes", "ratingsGiven", "ratingsReceived", "payments", "interestedCropTypes"})
+@ToString.Exclude
+private User ratedUser;
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "transaction_id")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "notifications", "enquiry", "buyer", "seller", "inventory", "payments", "ratings"})
+@ToString.Exclude
+private Transaction transaction;
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "inventory_id")
+@JsonBackReference("inventory-ratings")
+@ToString.Exclude
+private Inventory inventory;
+
+@Column(name = "rating_score", nullable = false)
+@NotNull(message = "Rating score is required")
+@Min(value = 1, message = "Rating must be at least 1")
+@Max(value = 5, message = "Rating must be at most 5")
+private Integer ratingScore;
+
+@Enumerated(EnumType.STRING)
+@Column(name = "rating_type", nullable = false, length = 30)
+@NotNull(message = "Rating type is required")
+private RatingType ratingType;
+
+@Column(name = "comment", columnDefinition = "text")
+private String comment;
 }
 
