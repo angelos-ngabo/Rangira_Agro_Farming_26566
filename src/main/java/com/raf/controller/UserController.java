@@ -194,9 +194,11 @@ return ResponseEntity.ok(userService.getLocationFromUser(id));
 
 @GetMapping("/{id}/province")
 @Operation(summary = "Get province from user (navigates up hierarchy)")
-public ResponseEntity<Location> getProvinceFromUser(@PathVariable Long id) {
-Location province = userService.getProvinceFromUser(id);
-return ResponseEntity.ok(province);
+public ResponseEntity<Map<String, String>> getProvinceFromUser(@PathVariable Long id) {
+String province = userService.getProvinceFromUser(id);
+Map<String, String> response = new HashMap<>();
+response.put("province", province);
+return ResponseEntity.ok(response);
 }
 
 @GetMapping("/{id}/location/hierarchy")

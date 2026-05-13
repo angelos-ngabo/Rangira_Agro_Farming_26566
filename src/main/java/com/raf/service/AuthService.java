@@ -30,6 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Service class responsible for managing authentication, registration, and security-related operations.
+ * Implements UserDetailsService to integrate with Spring Security for loading user credentials.
+ * Handles JWT token generation, 2FA (Two-Factor Authentication), and password recovery flows.
+ */
 @Service
 @Slf4j
 @Transactional
@@ -76,6 +81,14 @@ throw new UsernameNotFoundException("User not found with email: " + email);
 }
 }
 
+/**
+ * Authenticates a user based on email and password.
+ * Incorporates checks for inactive accounts and 2FA verification.
+ * 
+ * @param request LoginRequest containing email and password.
+ * @return AuthResponse containing JWT token if successful, or 2FA challenge.
+ * @throws BadCredentialsException for invalid credentials or inactive accounts.
+ */
 public AuthResponse login(LoginRequest request) {
 log.info("Attempting login for email: {}", request.getEmail());
 
@@ -223,6 +236,14 @@ User user = userService.getUserByEmail(email);
 otpService.generateAndSendOtp(email, user.getFirstName(), true);
 }
 
+/**
+ * Registers a new user in the system.
+ * Sets default INACTIVE status until email verification is completed via OTP.
+ * 
+ * @param request RegisterRequest with new user details.
+ * @return AuthResponse with registration success message.
+ * @throws DuplicateResourceException if email or phone is already registered.
+ */
 public AuthResponse register(RegisterRequest request) {
 log.info("Registering new user with email: {}", request.getEmail());
 
@@ -276,6 +297,13 @@ return AuthResponse.builder()
 .build();
 }
 
+/**
+ * Verifies the OTP sent to the user's email to activate their account.
+ * 
+ * @param email The email address to verify.
+ * @param otpCode The OTP code provided by the user.
+ * @return AuthResponse containing a valid JWT token upon successful activation.
+ */
 public AuthResponse verifyOtpAndActivate(String email, String otpCode) {
 log.info("Verifying OTP for email: {}", email);
 
@@ -323,6 +351,12 @@ User user = userService.getUserByEmail(email);
 otpService.resendOtp(email, user.getFirstName());
 }
 
+/**
+ * Initiates the password recovery process by generating a unique reset token
+ * and sending an email to the user.
+ * 
+ * @param email The email address of the user requesting password reset.
+ */
 public void forgotPassword(String email) {
 log.info("Processing password reset request for email: {}", email);
 
@@ -354,6 +388,14 @@ log.warn("Password reset requested for non-existent email: {}", email);
 }
 }
 
+/**
+ * Resets a user's password using a valid reset token.
+ * Invalidates the token after successful use to prevent reuse.
+ * 
+ * @param token The UUID reset token sent to the user's email.
+ * @param newPassword The new password to be securely hashed and stored.
+ * @throws BadCredentialsException if the token is invalid, expired, or already used.
+ */
 public void resetPassword(String token, String newPassword) {
 log.info("Processing password reset with token");
 

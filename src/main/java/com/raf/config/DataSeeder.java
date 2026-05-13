@@ -11,7 +11,6 @@ import com.raf.entity.WarehouseAccess;
 import com.raf.enums.AccessLevel;
 import com.raf.enums.CropCategory;
 import com.raf.enums.DeliveryStatus;
-import com.raf.enums.ELocation;
 import com.raf.enums.InventoryStatus;
 import com.raf.enums.MeasurementUnit;
 import com.raf.enums.PaymentStatus;
@@ -32,6 +31,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -54,9 +54,13 @@ private final WarehouseAccessRepository warehouseAccessRepository;
 private final InventoryRepository inventoryRepository;
 private final TransactionRepository transactionRepository;
 private final PasswordEncoder passwordEncoder;
+private final javax.sql.DataSource dataSource;
 
 @PersistenceContext
 private EntityManager entityManager;
+
+@Value("${server.port:8080}")
+private int serverPort;
 
 @Override
 public void run(String... args) {
@@ -73,11 +77,15 @@ log.info("╚══════════════════════�
 log.info("");
 
 
-
-log.info("📍 [1/7] Seeding locations... [SKIPPED - Use SQL script to seed locations]");
-
-
-log.info("   ✅ Locations seeding skipped (use SQL script)");
+log.info("📍 [1/7] Seeding locations...");
+seedLocationsIfEmpty();
+long locationRows = locationRepository.count();
+if (locationRows == 0) {
+log.error("❌ Location table is empty — province dropdowns will be empty. Check PostgreSQL and seeds.sql errors above.");
+} else if (locationRows < 14800) {
+log.warn("⚠️ Location count is {} (expected ~14837). Address cascades may be incomplete; re-run or restore seeds.sql.", locationRows);
+}
+log.info("   ✅ Locations seeding completed");
 
 log.info("🌾 [2/7] Seeding crop types...");
 seedCropTypesIfEmpty();
@@ -108,7 +116,10 @@ log.info("   ✅ Warehouse managers completed");
 
 
 
-log.info("📦 [SKIPPED] Inventory seeding - Farmers will add crops from scratch with proper information");
+log.info("📦 [7/7] Seeding test inventory items for farmers and warehouses...");
+seedTestInventory();
+inventoryRepository.flush();
+log.info("   ✅ Inventory completed");
 log.info("💰 [SKIPPED] Transaction seeding - Transactions will be created through normal purchase flow");
 
 log.info("");
@@ -120,8 +131,8 @@ log.info("");
 
 log.info("═══════════════════════════════════════════════════════════");
 log.info("  🚀 Rangira Agro Farming Application is READY!");
-log.info("  📚 API Documentation: http://localhost:8080/swagger-ui.html");
-log.info("  🌐 Server running on: http://localhost:8080");
+log.info("  📚 API Documentation: http://localhost:{}/swagger-ui.html", serverPort);
+log.info("  🌐 Server running on: http://localhost:{}", serverPort);
 log.info("═══════════════════════════════════════════════════════════");
 log.info("  LOGIN CREDENTIALS:");
 log.info("  Admin: ngaboangelos2@gmail.com / Ngabo@123");
@@ -218,412 +229,26 @@ log.warn("Continuing with next seeding operation...");
 
 private void seedLocationsIfEmpty() {
 safeExecute("seedLocationsIfEmpty", () -> {
-log.info("Starting comprehensive Rwandan location seeding...");
-seedRwandanLocations();
-log.info("Completed Rwandan location seeding");
-log.info("Ensuring all sectors have cells and villages...");
-ensureAllSectorsHaveCellsAndVillages();
-log.info("Completed cells and villages verification");
+if (locationRepository.count() < 14800) {
+log.info("Location table dataset incomplete (expected ~14837). Executing seeds.sql...");
+try (java.sql.Connection connection = dataSource.getConnection()) {
+org.springframework.core.io.Resource resource = new org.springframework.core.io.ClassPathResource("seeds.sql");
+org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(connection, resource);
+log.info("seeds.sql executed successfully.");
+} catch (Exception e) {
+log.error("Failed to execute seeds.sql", e);
+}
+} else {
+log.info("Locations already exist in database (count: {}), skipping external seeds application.", locationRepository.count());
+}
 });
 }
 
 private void ensureAllSectorsHaveCellsAndVillages() {
-Map<String, List<String>> cellsBySector = RwandanLocationData.getCellsBySector();
-Map<String, List<String>> villagesByCell = RwandanLocationData.getVillagesByCell();
-Set<String> usedCodes = new HashSet<>();
-
-List<Location> allSectors = locationRepository.findByTypeWithParents(ELocation.Sector);
-log.info("Found {} sectors in database. Ensuring all have cells and villages...", allSectors.size());
-log.info("Total cell keys available in RwandanLocationData: {}", cellsBySector.size());
-log.info("Total village keys available in RwandanLocationData: {}", villagesByCell.size());
-
-if (allSectors.isEmpty()) {
-log.warn("No sectors found in database! Cannot seed cells and villages.");
-return;
-}
-
-int cellsAdded = 0;
-int villagesAdded = 0;
-int sectorsProcessed = 0;
-int sectorsSkipped = 0;
-int cellsSkipped = 0;
-int villagesSkipped = 0;
-
-for (Location sector : allSectors) {
-try {
-if (sector.getParent() == null) {
-log.warn("Sector {} has no parent, skipping", sector.getName());
-sectorsSkipped++;
-continue;
-}
-
-Location district = sector.getParent();
-if (district.getParent() == null) {
-log.warn("District {} (parent of sector {}) has no parent, skipping", district.getName(), sector.getName());
-sectorsSkipped++;
-continue;
-}
-
-String districtName = district.getName().replace(" District", "").trim();
-String sectorName = sector.getName().replace(" Sector", "").trim();
-String cellKey = districtName + "-" + sectorName;
-
-log.debug("Processing sector: {} in district: {} (key: {})", sectorName, districtName, cellKey);
-
-List<String> cellNames = cellsBySector.get(cellKey);
-if (cellNames == null || cellNames.isEmpty()) {
-log.warn("No cells data found for sector key: {} (Sector: {}, District: {})", cellKey, sectorName, districtName);
-sectorsSkipped++;
-continue;
-}
-
-log.info("Found {} cells for sector key: {} (Sector: {})", cellNames.size(), cellKey, sectorName);
-
-for (String cellName : cellNames) {
-if (cellName == null || cellName.trim().isEmpty()) {
-cellsSkipped++;
-continue;
-}
-
-String cleanCellName = cellName.trim().replace("_", "");
-String cellDisplayName = cleanCellName;
-if (!cellDisplayName.endsWith(" Cell")) {
-cellDisplayName = cellDisplayName + " Cell";
-}
-
-String cellCode = generateUniqueCode("CELL", cleanCellName + sectorName, usedCodes, 20);
-Location existingCell = locationRepository.findByCode(cellCode).orElse(null);
-
-if (existingCell == null) {
-Location cell = getOrCreateCell(cellCode, cellDisplayName, sector);
-cellsAdded++;
-log.debug("Created cell: {} in sector: {}", cellDisplayName, sectorName);
-
-String villageKey = districtName + "-" + sectorName + "-" + cleanCellName;
-List<String> villageNames = villagesByCell.get(villageKey);
-
-if (villageNames != null && !villageNames.isEmpty()) {
-log.debug("Found {} villages for cell key: {}", villageNames.size(), villageKey);
-for (String villageName : villageNames) {
-if (villageName == null || villageName.trim().isEmpty()) {
-villagesSkipped++;
-continue;
-}
-
-String villageDisplayName = villageName.trim();
-String villageCode = generateUniqueCode("VIL", villageDisplayName + cleanCellName + sectorName, usedCodes, 20);
-Location existingVillage = locationRepository.findByCode(villageCode).orElse(null);
-
-if (existingVillage == null) {
-getOrCreateVillage(villageCode, villageDisplayName, cell);
-villagesAdded++;
-} else {
-villagesSkipped++;
-}
-}
-} else {
-log.debug("No villages found for cell key: {}", villageKey);
-}
-} else {
-String villageKey = districtName + "-" + sectorName + "-" + cleanCellName;
-List<String> villageNames = villagesByCell.get(villageKey);
-
-if (villageNames != null && !villageNames.isEmpty()) {
-List<Location> existingVillages = locationRepository.findByParentId(existingCell.getId());
-Set<String> existingVillageNames = existingVillages.stream()
-.map(Location::getName)
-.map(name -> name.replace(" Village", "").trim())
-.collect(java.util.stream.Collectors.toSet());
-
-for (String villageName : villageNames) {
-if (villageName == null || villageName.trim().isEmpty()) {
-villagesSkipped++;
-continue;
-}
-
-String villageDisplayName = villageName.trim();
-if (!existingVillageNames.contains(villageDisplayName)) {
-String villageCode = generateUniqueCode("VIL", villageDisplayName + cleanCellName + sectorName, usedCodes, 20);
-Location existingVillage = locationRepository.findByCode(villageCode).orElse(null);
-
-if (existingVillage == null) {
-getOrCreateVillage(villageCode, villageDisplayName, existingCell);
-villagesAdded++;
-} else {
-villagesSkipped++;
-}
-} else {
-villagesSkipped++;
-}
-}
-}
-}
-}
-
-sectorsProcessed++;
-if (sectorsProcessed % 50 == 0) {
-log.info("Processed {} sectors, added {} cells and {} villages so far...", sectorsProcessed, cellsAdded, villagesAdded);
-}
-} catch (Exception e) {
-log.error("Error processing sector {}: {}", sector.getName(), e.getMessage(), e);
-sectorsSkipped++;
-}
-
-if ((cellsAdded + villagesAdded) % 100 == 0 && (cellsAdded + villagesAdded) > 0) {
-entityManager.flush();
-}
-}
-
-entityManager.flush();
-log.info("Processed {} sectors, skipped {} sectors", sectorsProcessed, sectorsSkipped);
-log.info("Added {} new cells ({} skipped) and {} new villages ({} skipped) to existing sectors",
-cellsAdded, cellsSkipped, villagesAdded, villagesSkipped);
-
-long totalCells = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Cell)
-.count();
-long totalVillages = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Village)
-.count();
-log.info("Total cells in database: {}, Total villages in database: {}", totalCells, totalVillages);
-
-if (totalCells == 0) {
-log.error("CRITICAL: No cells found in database! The seeding may have failed.");
-}
-if (totalVillages == 0) {
-log.error("CRITICAL: No villages found in database! The seeding may have failed.");
-}
-
-if (sectorsSkipped > 0) {
-log.warn("WARNING: {} sectors were skipped. This might indicate missing data in RwandanLocationData or incorrect key matching.", sectorsSkipped);
-}
-}
-
-private void seedRwandanLocations() {
-Map<String, Location> provinces = new HashMap<>();
-Map<String, Location> districts = new HashMap<>();
-Map<String, Location> sectors = new HashMap<>();
-Set<String> usedCodes = new HashSet<>();
-
-int sectorCount = 0;
-int cellCount = 0;
-int villageCount = 0;
-
-Location kigali = getOrCreateProvince("PRV-KGL", "Kigali");
-Location northern = getOrCreateProvince("PRV-NORTH", "Northern Province");
-Location southern = getOrCreateProvince("PRV-SOUTH", "Southern Province");
-Location eastern = getOrCreateProvince("PRV-EAST", "Eastern Province");
-Location western = getOrCreateProvince("PRV-WEST", "Western Province");
-
-provinces.put("Kigali", kigali);
-provinces.put("Northern Province", northern);
-provinces.put("Southern Province", southern);
-provinces.put("Eastern Province", eastern);
-provinces.put("Western Province", western);
-
-Map<String, List<String>> districtsByProvince = RwandanLocationData.getDistrictsByProvince();
-Map<String, List<String>> sectorsByDistrict = RwandanLocationData.getSectorsByDistrict();
-Map<String, List<String>> cellsBySector = RwandanLocationData.getCellsBySector();
-Map<String, List<String>> villagesByCell = RwandanLocationData.getVillagesByCell();
-
-for (Map.Entry<String, List<String>> provinceEntry : districtsByProvince.entrySet()) {
-String provinceKey = provinceEntry.getKey();
-Location province = provinces.get(provinceKey);
-if (province == null) {
-log.warn("Province not found in provinces map: {}", provinceKey);
-continue;
-}
-log.info("Processing province: {} with {} districts", provinceKey, provinceEntry.getValue().size());
-
-for (String districtName : provinceEntry.getValue()) {
-String districtCode = generateUniqueCode("DST", districtName, usedCodes, 10);
-Location district = getOrCreateDistrict(districtCode, districtName + " District", province);
-districts.put(districtName, district);
-log.debug("Created district: {} in province: {} (parent ID: {})", districtName + " District", provinceKey, district.getParent() != null ? district.getParent().getId() : "NULL");
-
-List<String> sectorNames = sectorsByDistrict.get(districtName);
-if (sectorNames != null && !sectorNames.isEmpty()) {
-log.info("Processing district: {} (Province: {}) with {} sectors", districtName, provinceKey, sectorNames.size());
-for (String sectorName : sectorNames) {
-String sectorCode = generateUniqueCode("SCTR", sectorName, usedCodes, 15);
-Location sector = getOrCreateSector(sectorCode, sectorName + " Sector", district);
-String sectorKey = districtName + "-" + sectorName;
-sectors.put(sectorKey, sector);
-sectorCount++;
-
-String cellKey = sectorKey;
-List<String> cellNames = cellsBySector.get(cellKey);
-
-if (cellNames != null && !cellNames.isEmpty() && !cellNames.stream().allMatch(s -> s == null || s.trim().isEmpty())) {
-log.debug("Processing sector: {} with {} cells", sectorName, cellNames.size());
-for (String cellName : cellNames) {
-if (cellName == null || cellName.trim().isEmpty()) continue;
-
-String cleanCellName = cellName.trim().replace("_", "");
-String cellDisplayName = cleanCellName;
-if (!cellDisplayName.endsWith(" Cell")) {
-cellDisplayName = cellDisplayName + " Cell";
-}
-
-String cellCode = generateUniqueCode("CELL", cleanCellName + sectorName, usedCodes, 20);
-Location existingCell = locationRepository.findByCode(cellCode).orElse(null);
-if (existingCell == null) {
-Location cell = getOrCreateCell(cellCode, cellDisplayName, sector);
-cellCount++;
-
-String villageKey = districtName + "-" + sectorName + "-" + cleanCellName;
-List<String> villageNames = villagesByCell.get(villageKey);
-
-if (villageNames != null && !villageNames.isEmpty()) {
-for (String villageName : villageNames) {
-if (villageName == null || villageName.trim().isEmpty()) continue;
-String villageDisplayName = villageName.trim();
-String villageCode = generateUniqueCode("VIL", villageDisplayName + cleanCellName + sectorName, usedCodes, 20);
-Location existingVillage = locationRepository.findByCode(villageCode).orElse(null);
-if (existingVillage == null) {
-getOrCreateVillage(villageCode, villageDisplayName, cell);
-villageCount++;
-}
-}
-}
-}
-}
-} else {
-log.warn("No cells found for sector: {} in district: {} (key: {})", sectorName, districtName, cellKey);
-}
-
-entityManager.flush();
-}
-}
-}
-}
-
-entityManager.flush();
-log.info("Seeded Rwandan locations: 5 Provinces, 30 Districts, {} Sectors, {} Cells, {} Villages",
-sectorCount, cellCount, villageCount);
-
-long sectorCountInDb = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Sector)
-.count();
-long cellCountInDb = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Cell)
-.count();
-long villageCountInDb = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Village)
-.count();
-log.info("Verified {} sectors, {} cells, {} villages in database", sectorCountInDb, cellCountInDb, villageCountInDb);
-}
-
-private String generateUniqueCode(String prefix, String name, Set<String> usedCodes, int maxLength) {
-String baseCode = prefix + "-" + name.toUpperCase().replaceAll("\\s+", "");
-String code = baseCode.substring(0, Math.min(maxLength, baseCode.length()));
-
-int counter = 1;
-String finalCode = code;
-while (usedCodes.contains(finalCode)) {
-String suffix = String.valueOf(counter);
-int availableLength = maxLength - suffix.length() - 1;
-finalCode = code.substring(0, Math.min(availableLength, code.length())) + "-" + suffix;
-counter++;
-}
-usedCodes.add(finalCode);
-return finalCode;
+log.info("Legacy cell and village seeding omitted. Using external SQL seeds.");
 }
 
 
-private Location getOrCreateProvince(String code, String name) {
-return locationRepository.findByCode(code)
-.orElseGet(() -> createProvince(code, name));
-}
-
-private Location getOrCreateDistrict(String code, String name, Location province) {
-return locationRepository.findByCode(code)
-.map(existing -> {
-if (existing.getParent() == null || !existing.getParent().getId().equals(province.getId())) {
-log.warn("District {} already exists but has wrong parent. Updating parent from {} to {}",
-name, existing.getParent() != null ? existing.getParent().getName() : "NULL", province.getName());
-existing.setParent(province);
-return locationRepository.save(existing);
-}
-return existing;
-})
-.orElseGet(() -> createDistrict(code, name, province));
-}
-
-private Location getOrCreateSector(String code, String name, Location district) {
-return locationRepository.findByCode(code)
-.orElseGet(() -> createSector(code, name, district));
-}
-
-private Location getOrCreateCell(String code, String name, Location sector) {
-return locationRepository.findByCode(code)
-.orElseGet(() -> createCell(code, name, sector));
-}
-
-private Location getOrCreateVillage(String code, String name, Location cell) {
-return locationRepository.findByCode(code)
-.orElseGet(() -> createVillage(code, name, cell));
-}
-
-
-private Location createProvince(String code, String name) {
-Location province = Location.builder()
-.code(code)
-.name(name)
-.type(ELocation.Province)
-.build();
-Location saved = locationRepository.save(province);
-entityManager.flush();
-return saved;
-}
-
-private Location createDistrict(String code, String name, Location province) {
-Location district = Location.builder()
-.code(code)
-.name(name)
-.type(ELocation.District)
-.parent(province)
-.build();
-Location saved = locationRepository.save(district);
-entityManager.flush();
-return saved;
-}
-
-private Location createSector(String code, String name, Location district) {
-Location sector = Location.builder()
-.code(code)
-.name(name)
-.type(ELocation.Sector)
-.parent(district)
-.build();
-Location saved = locationRepository.save(sector);
-entityManager.flush();
-return saved;
-}
-
-private Location createCell(String code, String name, Location sector) {
-Location cell = Location.builder()
-.code(code)
-.name(name)
-.type(ELocation.Cell)
-.parent(sector)
-.build();
-Location saved = locationRepository.save(cell);
-entityManager.flush();
-return saved;
-}
-
-private Location createVillage(String code, String name, Location cell) {
-Location village = Location.builder()
-.code(code)
-.name(name)
-.type(ELocation.Village)
-.parent(cell)
-.build();
-Location saved = locationRepository.save(village);
-entityManager.flush();
-return saved;
-}
 
 private void seedCropTypesIfEmpty() {
 safeExecute("seedCropTypesIfEmpty", () -> {
@@ -753,8 +378,7 @@ User existingAdmin = userRepository.findByEmail(adminEmail).orElse(null);
 
 if (existingAdmin != null) {
 
-log.info("Admin user exists, updating password to ensure correct hash");
-existingAdmin.setPassword(passwordEncoder.encode(adminPassword));
+log.info("Admin user already exists. Skipping password reset.");
 existingAdmin.setUserType(UserType.ADMIN);
 existingAdmin.setStatus(UserStatus.ACTIVE);
 userRepository.save(existingAdmin);
@@ -768,22 +392,19 @@ profile.setUser(existingAdmin);
 profile.setVerified(true);
 userProfileRepository.save(profile);
 
-log.info("Admin user password updated: {}", adminEmail);
 return;
 }
 
 
 Location sectorKigali = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Sector &&
-l.getName().contains("Bumbogo"))
+.filter(l -> "Bumbogo".equalsIgnoreCase(l.getSector()))
 .findFirst()
 .orElseGet(() -> locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Sector)
 .findFirst()
 .orElse(null));
 
 if (sectorKigali == null) {
-log.warn("No sector location found. Cannot seed admin user.");
+log.warn("No location found. Cannot seed admin user.");
 return;
 }
 
@@ -853,12 +474,12 @@ log.warn("Only {} warehouses found, expected 12. Seeding additional warehouses..
 
 
 List<Location> sectors = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Sector)
+.limit(100)
 .collect(Collectors.toList());
 
-log.info("Found {} sectors in database", sectors.size());
+log.info("Found {} locations in database", sectors.size());
 if (sectors.isEmpty()) {
-log.error("❌ No sectors found, cannot seed warehouses. Please check location seeding.");
+log.error("❌ No locations found, cannot seed warehouses. Please check location seeding.");
 return;
 }
 
@@ -947,22 +568,21 @@ return;
 log.info("Starting to seed test users (Farmers, Buyers, Storekeepers)...");
 
 Location sectorKigali = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Sector)
 .findFirst()
 .orElse(null);
 
 if (sectorKigali == null) {
-log.warn("No sector found, cannot seed test users");
+log.warn("No location found, cannot seed test users");
 return;
 }
 
 String testPassword = "Test@123";
 List<Location> allSectors = locationRepository.findAll().stream()
-.filter(l -> l.getType() == ELocation.Sector)
+.limit(500)
 .collect(Collectors.toList());
 
 if (allSectors.isEmpty()) {
-log.warn("No sectors found, cannot seed test users");
+log.warn("No locations found, cannot seed test users");
 return;
 }
 

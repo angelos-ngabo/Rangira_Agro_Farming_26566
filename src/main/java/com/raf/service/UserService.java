@@ -32,6 +32,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Service class responsible for managing user lifecycle, profiles, and administrative actions.
+ * Handles user creation, profile updates, role assignments, and location associations.
+ * Uses {@link Transactional} to ensure database consistency across multiple entity updates.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -51,6 +56,15 @@ private final NotificationService notificationService;
 @PersistenceContext
 private EntityManager entityManager;
 
+/**
+ * Creates a new user from a registration request.
+ * Performs validation for duplicate emails, phone numbers, and user codes.
+ * 
+ * @param request UserRequest containing the registration details.
+ * @return The newly created User entity.
+ * @throws DuplicateResourceException if unique constraints are violated.
+ * @throws ResourceNotFoundException if the specified location does not exist.
+ */
 public User createUserFromRequest(UserRequest request) {
 log.info("Creating user from request: {} {}", request.getFirstName(), request.getLastName());
 
@@ -164,71 +178,28 @@ return userPage;
 
 public List<User> getUsersByLocationCode(String locationCode) {
 log.info("Getting users by location code: {}", locationCode);
-
-Location location = locationRepository.findByCode(locationCode)
-.orElseThrow(() -> new ResourceNotFoundException("Location not found with code: " + locationCode));
-
-if (location.getType() == com.raf.enums.ELocation.Province) {
-
-return userRepository.findUsersByProvinceCode(locationCode);
-} else {
-
 return userRepository.findByLocationCode(locationCode);
-}
 }
 
 public List<User> getUsersByLocation(java.util.UUID locationId) {
 log.info("Getting users by location id: {}", locationId);
-Location location = locationRepository.findById(locationId)
-.orElseThrow(() -> new ResourceNotFoundException("Location not found"));
-return userRepository.findByLocationOrAnyParent(location);
+return userRepository.findByLocationId(locationId);
 }
 
 public List<User> getUsersByProvinceName(String provinceName) {
 log.info("Getting users by province name: {}", provinceName);
-List<Location> provinces = locationRepository.findByNameContainingIgnoreCase(provinceName);
-
-if (provinces.isEmpty()) {
-throw new ResourceNotFoundException("Province not found with name: " + provinceName);
-}
-
-Location province = provinces.stream()
-.filter(loc -> loc.getType() == com.raf.enums.ELocation.Province)
-.findFirst()
-.orElseThrow(() -> new ResourceNotFoundException("No province found with name: " + provinceName));
-
-
-return userRepository.findUsersInProvince(province);
+return userRepository.findUsersInProvince(provinceName);
 }
 
 public List<User> getUsersByProvinceCode(String provinceCode) {
 log.info("Getting users by province code: {}", provinceCode);
-
-Location province = locationRepository.findByCode(provinceCode)
-.orElseThrow(() -> new ResourceNotFoundException("Location not found with code: " + provinceCode));
-
-if (province.getType() != com.raf.enums.ELocation.Province) {
-throw new ResourceNotFoundException("Location with code " + provinceCode + " is not a province");
-}
-
-
 return userRepository.findUsersByProvinceCode(provinceCode);
 }
 
-public Location getProvinceFromUser(Long userId) {
+public String getProvinceFromUser(Long userId) {
 log.info("Getting province for user id: {}", userId);
 User user = getUserById(userId);
-Location currentLocation = user.getLocation();
-
-while (currentLocation != null && currentLocation.getType() != com.raf.enums.ELocation.Province) {
-currentLocation = currentLocation.getParent();
-}
-
-if (currentLocation == null) {
-throw new ResourceNotFoundException("Province not found for user");
-}
-
-return currentLocation;
+return user.getLocation().getProvince();
 }
 
 public Location getLocationFromUser(Long userId) {
@@ -240,15 +211,21 @@ return user.getLocation();
 public String getFullLocationHierarchy(Long userId) {
 User user = getUserById(userId);
 Location location = user.getLocation();
-StringBuilder hierarchy = new StringBuilder(location.getName());
-Location current = location.getParent();
-while (current != null) {
-hierarchy.insert(0, current.getName() + " > ");
-current = current.getParent();
-}
-return hierarchy.toString();
+if (location == null) return "No Location Assigned";
+return location.getProvince() + " > " + location.getDistrict() + " > " +
+location.getSector() + " > " + location.getCell() + " > " + location.getVillage();
 }
 
+/**
+ * Updates core user information including status and location.
+ * Sends a notification to all administrators upon successful update.
+ * 
+ * @param id The ID of the user to update.
+ * @param request UpdateUserRequest containing new user details.
+ * @return The updated User entity.
+ * @throws ResourceNotFoundException if the user or new location is not found.
+ * @throws DuplicateResourceException if the new email or phone is already in use by another user.
+ */
 public User updateUser(Long id, com.raf.dto.UpdateUserRequest request) {
 log.info("Updating user with id: {}", id);
 
@@ -519,6 +496,14 @@ return null;
 }
 
 
+/**
+ * Administrative function to create a new user with elevated privileges.
+ * Prevents admins from creating other admins or buyer roles directly through this flow.
+ * 
+ * @param request AdminUserRequest containing the user details and desired role.
+ * @return The newly created User entity with an active status and verified profile.
+ * @throws UnauthorizedException if attempting to create an unauthorized role type.
+ */
 public User createUserByAdmin(AdminUserRequest request) {
 log.info("Admin creating user: {} {} ({})", request.getFirstName(), request.getLastName(), request.getUserType());
 

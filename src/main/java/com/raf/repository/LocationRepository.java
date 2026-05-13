@@ -1,7 +1,6 @@
 package com.raf.repository;
 
 import com.raf.entity.Location;
-import com.raf.enums.ELocation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,24 +20,24 @@ Optional<Location> findByCode(String code);
 
 boolean existsByCode(String code);
 
-List<Location> findByNameContainingIgnoreCase(String name);
+Optional<Location> findByProvinceAndDistrictAndSectorAndCellAndVillage(
+String province, String district, String sector, String cell, String village);
 
-List<Location> findByType(ELocation type);
+@Query("SELECT DISTINCT l.province FROM Location l ORDER BY l.province")
+List<String> findDistinctProvinces();
 
-List<Location> findByType(ELocation type, Sort sort);
+@Query("SELECT DISTINCT l.district FROM Location l WHERE l.province = :province ORDER BY l.district")
+List<String> findDistinctDistrictsByProvince(@Param("province") String province);
 
-Page<Location> findByType(ELocation type, Pageable pageable);
+@Query("SELECT DISTINCT l.sector FROM Location l WHERE l.province = :province AND l.district = :district ORDER BY l.sector")
+List<String> findDistinctSectorsByProvinceAndDistrict(@Param("province") String province, @Param("district") String district);
 
-List<Location> findByParentId(UUID parentId);
+@Query("SELECT DISTINCT l.cell FROM Location l WHERE l.province = :province AND l.district = :district AND l.sector = :sector ORDER BY l.cell")
+List<String> findDistinctCellsByProvinceAndDistrictAndSector(@Param("province") String province, @Param("district") String district, @Param("sector") String sector);
 
-List<Location> findByParentIsNull();
+@Query("SELECT l FROM Location l WHERE l.province = :province AND l.district = :district AND l.sector = :sector AND l.cell = :cell ORDER BY l.village")
+List<Location> findVillagesByProvinceAndDistrictAndSectorAndCell(@Param("province") String province, @Param("district") String district, @Param("sector") String sector, @Param("cell") String cell);
 
-@Query("SELECT l FROM Location l WHERE l.type = :type AND l.parent.code = :parentCode")
-List<Location> findByTypeAndParentCode(@Param("type") ELocation type, @Param("parentCode") String parentCode);
-
-@Query("SELECT l FROM Location l WHERE l.name LIKE %:name%")
-List<Location> searchByName(@Param("name") String name);
-
-@Query("SELECT DISTINCT l FROM Location l LEFT JOIN FETCH l.parent p LEFT JOIN FETCH p.parent WHERE l.type = :type")
-List<Location> findByTypeWithParents(@Param("type") ELocation type);
+@Query("SELECT l FROM Location l WHERE LOWER(l.village) LIKE LOWER(CONCAT('%', :name, '%'))")
+List<Location> searchByVillageName(@Param("name") String name);
 }

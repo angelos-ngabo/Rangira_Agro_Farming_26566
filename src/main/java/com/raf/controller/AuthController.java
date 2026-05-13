@@ -19,6 +19,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * REST Controller responsible for handling all authentication and registration HTTP requests.
+ * Delegates business logic to the {@link AuthService}.
+ * Endpoints in this controller are generally publicly accessible as configured in SecurityConfig.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

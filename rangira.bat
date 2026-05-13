@@ -1,0 +1,3 @@
+@echo off
+echo Starting Rangira Agro Farming Backend...
+.\mvnw.cmd spring-boot:run

@@ -913,25 +913,12 @@ com.raf.entity.Location buyerLocation = transaction.getBuyer().getLocation();
 if (buyerLocation != null) {
 
 java.util.List<String> addressParts = new java.util.ArrayList<>();
-com.raf.entity.Location current = buyerLocation;
 
-
-if (current.getName() != null && !current.getName().trim().isEmpty()) {
-addressParts.add(current.getName());
-}
-
-
-int depth = 0;
-while (current != null && current.getParent() != null && depth < 5) {
-current = current.getParent();
-if (current.getName() != null && !current.getName().trim().isEmpty()) {
-addressParts.add(current.getName());
-}
-depth++;
-}
-
-
-java.util.Collections.reverse(addressParts);
+if (buyerLocation.getVillage() != null) addressParts.add(buyerLocation.getVillage());
+if (buyerLocation.getCell() != null) addressParts.add(buyerLocation.getCell());
+if (buyerLocation.getSector() != null) addressParts.add(buyerLocation.getSector());
+if (buyerLocation.getDistrict() != null) addressParts.add(buyerLocation.getDistrict());
+if (buyerLocation.getProvince() != null) addressParts.add(buyerLocation.getProvince());
 
 if (!addressParts.isEmpty()) {
 buyerAddress = String.join(", ", addressParts);

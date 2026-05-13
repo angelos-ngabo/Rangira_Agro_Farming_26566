@@ -30,6 +30,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Service class responsible for managing inventory lifecycles within storage warehouses.
+ * Handles crop storage, withdrawal, capacity management, and storekeeper assignments.
+ * Utilizes {@link Transactional} to ensure warehouse capacity and inventory records remain synchronized.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -46,6 +51,16 @@ private final NotificationService notificationService;
 @PersistenceContext
 private EntityManager entityManager;
 
+/**
+ * Creates a new inventory record from an incoming request.
+ * Automatically generates a unique inventory code and deducts the incoming quantity
+ * from the warehouse's available capacity.
+ * 
+ * @param request InventoryRequest containing farmer, warehouse, and crop details.
+ * @return The newly created Inventory entity.
+ * @throws ResourceNotFoundException if farmer, warehouse, or storekeeper do not exist.
+ * @throws DuplicateResourceException if a unique inventory code cannot be generated after retries.
+ */
 public Inventory createInventoryFromRequest(InventoryRequest request) {
 log.info("Creating inventory from request: {}", request.getInventoryCode());
 
@@ -404,6 +419,17 @@ return savedInventory;
 }
 
 
+/**
+ * Allows a storekeeper to update an inventory record assigned to them.
+ * Validates storekeeper authorization before allowing modifications to quantity or crop images.
+ * Generates an automated notification to the farmer upon successful update.
+ * 
+ * @param inventoryId The ID of the inventory to update.
+ * @param request InventoryUpdateRequest containing the new values.
+ * @param storekeeperId The ID of the storekeeper making the request.
+ * @return The updated Inventory entity.
+ * @throws IllegalArgumentException if the storekeeper is unauthorized or invalid.
+ */
 public Inventory updateInventoryByStorekeeper(Long inventoryId, InventoryUpdateRequest request, Long storekeeperId) {
 log.info("Storekeeper {} updating inventory {}", storekeeperId, inventoryId);
 
@@ -482,6 +508,15 @@ log.info("✅ Successfully updated inventory {} by storekeeper {}", inventoryId,
 return savedInventory;
 }
 
+/**
+ * Reduces the quantity of an inventory item, typically after a successful sale.
+ * Updates the inventory status to PARTIALLY_SOLD or SOLD based on remaining quantity.
+ * 
+ * @param id The ID of the inventory to reduce.
+ * @param soldQuantity The amount of crop sold in kilograms.
+ * @return The updated Inventory entity.
+ * @throws IllegalArgumentException if the sold quantity exceeds available remaining quantity.
+ */
 public Inventory reduceInventoryQuantity(Long id, BigDecimal soldQuantity) {
 log.info("Reducing inventory {} by {} kg", id, soldQuantity);
 

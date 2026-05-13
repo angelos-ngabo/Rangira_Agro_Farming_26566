@@ -19,6 +19,12 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * REST Controller for managing crop inventory operations.
+ * Handles HTTP requests for creating, updating, retrieving, and withdrawing inventory.
+ * Contains authorization checks to ensure farmers and storekeepers only access appropriate data.
+ * Delegates core business and database operations to {@link com.raf.service.InventoryService}.
+ */
 @RestController
 @RequestMapping("/api/inventories")
 @RequiredArgsConstructor

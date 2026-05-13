@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -34,7 +35,6 @@ public ResponseEntity<Map<String, Object>> search(
 HttpServletRequest request) {
 
 try {
-
 Long userId = getCurrentUserId(request);
 User user = userService.getUserById(userId);
 
@@ -47,9 +47,24 @@ Map<String, Object> results = dashboardSearchService.search(
 q, userId, user.getUserType(), page, size);
 
 return ResponseEntity.ok(results);
-} catch (Exception e) {
-log.error("Error in dashboard search: {}", e.getMessage(), e);
+} catch (RuntimeException e) {
+String errorMsg = e.getMessage();
+if (errorMsg != null && (errorMsg.contains("Authorization") || 
+errorMsg.contains("token") || 
+errorMsg.contains("Unable to extract") ||
+errorMsg.contains("User not found"))) {
+log.error("Authentication error in dashboard search: {}", errorMsg);
 return ResponseEntity.status(401).build();
+}
+log.error("Error in dashboard search: {}", errorMsg, e);
+Map<String, Object> errorResponse = new HashMap<>();
+errorResponse.put("error", "Search failed: " + (errorMsg != null ? errorMsg : "Internal server error"));
+return ResponseEntity.status(500).body(errorResponse);
+} catch (Exception e) {
+log.error("Unexpected error in dashboard search: {}", e.getMessage(), e);
+Map<String, Object> errorResponse = new HashMap<>();
+errorResponse.put("error", "Search failed due to an unexpected error");
+return ResponseEntity.status(500).body(errorResponse);
 }
 }
 

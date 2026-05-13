@@ -17,6 +17,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+/**
+ * Core security configuration class for the application.
+ * Manages JWT authentication, CORS policies, stateless session creation,
+ * and endpoint authorization rules.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -38,6 +43,15 @@ public JwtAuthenticationFilter jwtAuthenticationFilter() {
 return new JwtAuthenticationFilter(jwtUtil, authService);
 }
 
+/**
+ * Configures the primary security filter chain for HTTP requests.
+ * Defines permitted public endpoints, authenticated routes, and integrates
+ * the custom JWT authentication filter.
+ * 
+ * @param http HttpSecurity configuration object.
+ * @return The built SecurityFilterChain.
+ * @throws Exception if an error occurs during configuration.
+ */
 @Bean
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 http
@@ -66,6 +80,7 @@ org.springframework.http.HttpMethod.POST,
 "/v3/api-docs/**",
 "/actuator/health",
 "/api/health",
+"/api/health/test/db",
 "/favicon.ico",
 "/robots.txt",
 "/error"
