@@ -225,5 +225,5 @@ This UI tool allows developers and evaluators to:
 
 ## 👨‍💻 Author
 
-**Uwase Lisa Ornella**  
+**Ngabo Angelos**  
 *Academic Project / Capstone Software Engineering Showcase*
