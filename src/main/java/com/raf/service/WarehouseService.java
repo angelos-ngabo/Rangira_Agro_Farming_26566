@@ -238,9 +238,14 @@ StorageWarehouse warehouse = warehouseRepository.findById(id)
 .orElseThrow(() -> new ResourceNotFoundException(WAREHOUSE_NOT_FOUND_WITH_ID + id));
 String warehouseName = warehouse.getWarehouseName();
 String warehouseCode = warehouse.getWarehouseCode();
-log.info("Deleting warehouse ID: {}", id);
-warehouseRepository.delete(warehouse);
-
+        log.info("Deleting warehouse ID: {}", id);
+        try {
+            warehouseRepository.delete(warehouse);
+            entityManager.flush();
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.error("Failed to delete warehouse due to constraint violation: {}", e.getMessage());
+            throw new DuplicateResourceException("Cannot delete warehouse because it is actively in use (contains existing inventory or assigned storekeepers).");
+        }
 
 try {
 notificationService.notifyAllAdmins(
